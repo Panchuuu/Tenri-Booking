@@ -30,6 +30,15 @@ class BarberiaAdminTest extends TestCase
              ->assertStatus(404);
     }
 
+    public function test_superadmin_sin_barberia_recibe_403_en_mi_barberia(): void
+    {
+        $superadmin = User::factory()->superadmin()->create();
+
+        // El bypass de CheckRole lo deja entrar; antes findOrFail(null) daba 404.
+        $this->actingAs($superadmin)->getJson('/api/mi-barberia')->assertStatus(403);
+        $this->actingAs($superadmin)->putJson('/api/mi-barberia', ['tiempo_cancelacion' => 60])->assertStatus(403);
+    }
+
     public function test_admin_puede_ver_su_barberia(): void
     {
         [$admin, $barberia] = $this->crearAdminConBarberia();

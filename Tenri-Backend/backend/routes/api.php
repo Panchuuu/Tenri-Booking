@@ -59,16 +59,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/mi-equipo',     [BarberiaController::class, 'miEquipo']);
         Route::get('/mis-servicios', [BarberiaController::class, 'misServicios']);
 
-        // Barberos
-        Route::post  ('/barberos',           [BarberoController::class, 'store']);
+        // Barberos (las rutas con subida de imagen llevan rate limit)
+        Route::post  ('/barberos',           [BarberoController::class, 'store'])->middleware('throttle:30,1');
         Route::post  ('/barberos/asignar',   [BarberoController::class, 'asignarRol']);
-        Route::post  ('/barberos/{id}',      [BarberoController::class, 'update']); // POST + _method=PUT para multipart
-        Route::put   ('/barberos/{id}',      [BarberoController::class, 'update']);
+        Route::post  ('/barberos/{id}',      [BarberoController::class, 'update'])->middleware('throttle:30,1'); // POST + _method=PUT para multipart
+        Route::put   ('/barberos/{id}',      [BarberoController::class, 'update'])->middleware('throttle:30,1');
         Route::delete('/barberos/{id}',      [BarberoController::class, 'destroy']);
 
         // Servicios
-        Route::post  ('/servicios',      [ServicioController::class, 'store']);
-        Route::put   ('/servicios/{id}', [ServicioController::class, 'update']);
+        Route::post  ('/servicios',      [ServicioController::class, 'store'])->middleware('throttle:30,1');
+        Route::put   ('/servicios/{id}', [ServicioController::class, 'update'])->middleware('throttle:30,1');
         Route::delete('/servicios/{id}', [ServicioController::class, 'destroy']);
 
         // 🚫 FASE 4A: bloqueos de horario
@@ -85,11 +85,16 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // 👤 COMUNES
-    Route::post ('/citas',                       [CitaController::class, 'store']);
-    Route::get  ('/mis-reservas',                [CitaController::class, 'misReservas']);
-    Route::patch('/mis-citas/{id}/cancelar',     [CitaController::class, 'cancelarMiCita']);
-    Route::post ('/mis-citas/{id}/calificar',    [CitaController::class, 'calificar']);
+    Route::get('/mis-reservas', [CitaController::class, 'misReservas']);
 
-    // 🔄 FASE 4A: reagendar (lo puede hacer cliente, admin o barbero según rol)
-    Route::patch('/citas/{id}/reagendar', [CitaController::class, 'reagendar']);
+    // Escrituras de citas con rate limit: sin él, un script podía llenar
+    // la agenda de un barbero o spamear calificaciones sin freno.
+    Route::middleware('throttle:20,1')->group(function () {
+        Route::post ('/citas',                    [CitaController::class, 'store']);
+        Route::patch('/mis-citas/{id}/cancelar',  [CitaController::class, 'cancelarMiCita']);
+        Route::post ('/mis-citas/{id}/calificar', [CitaController::class, 'calificar']);
+
+        // 🔄 FASE 4A: reagendar (lo puede hacer cliente, admin o barbero según rol)
+        Route::patch('/citas/{id}/reagendar', [CitaController::class, 'reagendar']);
+    });
 });

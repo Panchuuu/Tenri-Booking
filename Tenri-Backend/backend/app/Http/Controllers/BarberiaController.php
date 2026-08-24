@@ -63,6 +63,12 @@ class BarberiaController extends Controller
 
     public function miBarberia(Request $request)
     {
+        // El superadmin pasa el middleware role:admin (bypass) pero no tiene
+        // barbería asignada: sin este guard, findOrFail(null) revienta en 404.
+        if (!$request->user()->barberia_id) {
+            return response()->json(['error' => 'Tu cuenta no tiene una barbería asignada.'], 403);
+        }
+
         $barberia = Barberia::findOrFail($request->user()->barberia_id);
         return response()->json($barberia);
     }
@@ -81,6 +87,10 @@ class BarberiaController extends Controller
      */
     public function updateConfig(UpdateConfigBarberiaRequest $request)
     {
+        if (!$request->user()->barberia_id) {
+            return response()->json(['error' => 'Tu cuenta no tiene una barbería asignada.'], 403);
+        }
+
         $barberia = Barberia::findOrFail($request->user()->barberia_id);
         $barberia->tiempo_cancelacion = $request->tiempo_cancelacion;
         $barberia->save();

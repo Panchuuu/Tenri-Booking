@@ -249,6 +249,17 @@ class CitaTest extends TestCase
              ->assertStatus(422);
     }
 
+    public function test_disponibilidad_solo_responde_para_barberos(): void
+    {
+        $cliente = User::factory()->cliente()->create();
+        $fecha   = now()->addDays(3)->format('Y-m-d');
+
+        // Un ID que no es barbero no debe filtrar horarios ni confirmar
+        // que la cuenta existe (endpoint público).
+        $this->getJson("/api/barberos/{$cliente->id}/disponibilidad?fecha={$fecha}")
+             ->assertStatus(404);
+    }
+
     public function test_usuario_no_autenticado_no_puede_crear_cita(): void
     {
         [$barberia, $barbero, $servicio] = $this->setupBarberia();

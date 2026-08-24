@@ -23,10 +23,12 @@ export default defineConfig([
       },
     },
     rules: {
+      // El spread va PRIMERO: si va después pisa los overrides de abajo
+      // (exhaustive-deps volvía a "error" silenciosamente).
+      ...(reactHooks.configs.flat.recommended.rules ?? {}),
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
       // TODO: refactorizar antipatterns React Hooks v6 (deuda técnica)
       'react-hooks/exhaustive-deps': 'warn',
-      ...(reactHooks.configs.flat.recommended.rules ?? {}),
       'react-hooks/set-state-in-effect': 'off',
       'react-hooks/use-memo': 'off',
       'react-hooks/static-components': 'off',

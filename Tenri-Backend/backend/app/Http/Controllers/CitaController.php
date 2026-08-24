@@ -385,7 +385,9 @@ class CitaController extends Controller
             return response()->json(['error' => 'Falta indicar la fecha'], 400);
         }
 
-        $barbero = User::findOrFail($id);
+        // Solo barberos: antes cualquier ID de usuario respondía 200,
+        // permitiendo enumerar cuentas por un endpoint público.
+        $barbero = User::where('id', $id)->where('rol', 'barbero')->firstOrFail();
 
         $bloqueo = BloqueoHorario::where('barbero_id', $id)
             ->activoEnFecha($fecha)->first();

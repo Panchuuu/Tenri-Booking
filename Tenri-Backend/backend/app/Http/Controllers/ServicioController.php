@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Servicio;
 use App\Models\Barberia;
 use Illuminate\Http\Request;
-use App\Http\Requests\StoreServicioRequest; 
+use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\StoreServicioRequest;
 
 class ServicioController extends Controller
 {
@@ -63,8 +64,11 @@ class ServicioController extends Controller
         ];
 
         if ($request->hasFile('imagen')) {
-            $rutaImagen = $request->file('imagen')->store('servicios', 'public');
-            $datosActualizar['imagen'] = $rutaImagen;
+            // Borrar la imagen anterior: antes quedaban huérfanas en disco.
+            if ($servicio->imagen && Storage::disk('public')->exists($servicio->imagen)) {
+                Storage::disk('public')->delete($servicio->imagen);
+            }
+            $datosActualizar['imagen'] = $request->file('imagen')->store('servicios', 'public');
         }
 
         $servicio->update($datosActualizar);
@@ -76,7 +80,11 @@ class ServicioController extends Controller
         $servicio = Servicio::where('id', $id)
                             ->where('barberia_id', $request->user()->barberia_id)
                             ->firstOrFail();
-                            
+
+        if ($servicio->imagen && Storage::disk('public')->exists($servicio->imagen)) {
+            Storage::disk('public')->delete($servicio->imagen);
+        }
+
         $servicio->delete();
         return response()->json(['mensaje' => 'Servicio eliminado correctamente']);
     }
