@@ -1,0 +1,22 @@
+# ============================================================
+# SPA fallback para React Router (BrowserRouter)
+# Sin esto, un F5 o acceso directo a /admin, /barberia/x, etc.
+# devuelve 404 de Apache porque esos archivos no existen.
+# Vite copia este archivo desde public/ a dist/ en el build.
+# ============================================================
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Las rutas /api/* las maneja el puente en public_html/api/
+    # (tiene su propio .htaccess), no la SPA.
+    RewriteRule ^api/ - [L]
+
+    # Archivos y carpetas reales (assets, index.html) se sirven tal cual
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Todo lo demás cae en la SPA
+    RewriteRule ^ index.html [L]
+</IfModule>

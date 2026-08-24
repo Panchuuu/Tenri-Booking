@@ -134,7 +134,7 @@ jobs:
             -x "*.git*" \
             -x "tests/*" \
             -x "node_modules/*" \
-            -x ".env*" \
+            -x ".env" \
             -x "storage/logs/*" \
             -x "storage/framework/cache/*" \
             -x "storage/framework/sessions/*" \
@@ -153,8 +153,13 @@ jobs:
       - name: ✅ Deploy de archivos completado
         run: |
           echo "✅ Frontend y backend subidos via FTP"
-          echo "⚠️ Ejecuta los comandos artisan en el servidor:"
+          echo "⚠️ Ejecuta en el servidor (el zip se descomprime EN la raíz de booking_backend):"
           echo "   cd ~/booking_backend"
           echo "   unzip -o backend.zip && rm backend.zip"
-          echo "   cd Tenri-Backend/backend"
-          echo "   php artisan migrate --force && php artisan optimize:clear"
+          echo "   php artisan migrate --force"
+          echo "   php artisan optimize:clear"
+          echo ""
+          echo "📋 Setup de primera vez (solo una vez): ver docs/DEPLOY.md"
+          echo "   - Crear .env desde .env.production.example + php artisan key:generate"
+          echo "   - ln -s ~/booking_backend/storage/app/public ~/public_html/storage"
+          echo "   - Cron de cPanel para la cola de emails (o QUEUE_CONNECTION=sync)"
