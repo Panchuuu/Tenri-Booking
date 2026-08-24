@@ -10,6 +10,13 @@ class UsuarioSeeder extends Seeder
 {
     public function run(): void
     {
+        // 🔒 Credenciales de prueba: jamás en producción. Un `db:seed` en el
+        // servidor crearía un superadmin con contraseña conocida (admin123).
+        if (app()->environment('production')) {
+            $this->command?->warn('UsuarioSeeder omitido: no se crean usuarios de prueba en producción.');
+            return;
+        }
+
         // Creamos al Administrador
         User::create([
             'name' => 'Admin Tenri',

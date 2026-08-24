@@ -132,25 +132,11 @@ class BarberoController extends Controller
         $cantidadCanceladas = 0;
         $erroresEmail       = 0;
 
-        DB::transaction(function () use ($usuario, $citasActivas, &$cantidadCanceladas, &$erroresEmail) {
+        DB::transaction(function () use ($usuario, $citasActivas, &$cantidadCanceladas) {
             foreach ($citasActivas as $cita) {
                 $cita->estado = 'cancelada';
                 $cita->save();
                 $cantidadCanceladas++;
-
-                // 📧 Email síncrono al cliente (compat MySQL/cPanel sin queue worker).
-                // Si falla SMTP, capturamos para no romper la transacción.
-                // Nota: el envío ocurre DENTRO de la transacción; si el rollback
-                // ocurriera después, el mail ya estaría enviado. Aceptamos el
-                // trade-off por simplicidad de deploy en hosting compartido.
-                try {
-                    if ($cita->cliente && $cita->cliente->email) {
-                        Mail::to($cita->cliente->email)->send(new CitaCanceladaMail($cita));
-                    }
-                } catch (\Throwable $e) {
-                    $erroresEmail++;
-                    \Log::warning("Error al enviar email cita #{$cita->id}: " . $e->getMessage());
-                }
             }
 
             // Despasamos al barbero a cliente normal
@@ -158,6 +144,20 @@ class BarberoController extends Controller
             $usuario->barberia_id = null;
             $usuario->save();
         });
+
+        // 📧 Los correos se envían DESPUÉS del commit: si la transacción
+        // fallara, ningún cliente recibiría un aviso de una cancelación
+        // que nunca ocurrió.
+        foreach ($citasActivas as $cita) {
+            try {
+                if ($cita->cliente && $cita->cliente->email) {
+                    Mail::to($cita->cliente->email)->send(new CitaCanceladaMail($cita));
+                }
+            } catch (\Throwable $e) {
+                $erroresEmail++;
+                \Log::warning("Error al enviar email cita #{$cita->id}: " . $e->getMessage());
+            }
+        }
 
         return response()->json([
             'mensaje'             => 'Barbero removido del equipo',

@@ -67,35 +67,55 @@ class CitaController extends Controller
             ], 409);
         }
 
-        // 🛡️ Anti-choques
         $horaInicio = Carbon::parse($request->hora);
         $horaFin    = $horaInicio->copy()->addMinutes($servicioNuevo->duracion);
 
-        $citasDelDia = Cita::with('servicio')
-            ->where('barbero_id', $request->barbero_id)
-            ->where('fecha', $request->fecha)
-            ->where('estado', '!=', 'cancelada')->get();
+        // La transacción + lockForUpdate sobre el barbero serializa las reservas
+        // concurrentes: dos requests al mismo slot ya no pueden pasar ambos el
+        // chequeo de solapamiento antes de insertar.
+        $resultado = DB::transaction(function () use ($request, $servicioNuevo, $horaInicio, $horaFin) {
+            $barbero = User::where('id', $request->barbero_id)->lockForUpdate()->first();
 
-        foreach ($citasDelDia as $ce) {
-            $dur     = $ce->servicio->duracion ?? 30;
-            $inicio  = Carbon::parse($ce->hora);
-            $fin     = $inicio->copy()->addMinutes($dur);
-            if ($horaInicio < $fin && $horaFin > $inicio) {
-                return response()->json([
-                    'message' => '¡Ups! Este horario acaba de ser reservado por otro cliente.',
-                ], 409);
+            if ($error = $this->errorFueraDeTurno($barbero, $horaInicio, $horaFin)) {
+                return ['error' => $error, 'status' => 422];
             }
+
+            // 🛡️ Anti-choques
+            $citasDelDia = Cita::with('servicio')
+                ->where('barbero_id', $request->barbero_id)
+                ->where('fecha', $request->fecha)
+                ->where('estado', '!=', 'cancelada')->get();
+
+            foreach ($citasDelDia as $ce) {
+                $dur     = $ce->servicio->duracion ?? 30;
+                $inicio  = Carbon::parse($ce->hora);
+                $fin     = $inicio->copy()->addMinutes($dur);
+                if ($horaInicio < $fin && $horaFin > $inicio) {
+                    return [
+                        'error'  => '¡Ups! Este horario acaba de ser reservado por otro cliente.',
+                        'status' => 409,
+                    ];
+                }
+            }
+
+            $cita = Cita::create([
+                'cliente_id'  => $request->user()->id,
+                'barbero_id'  => $request->barbero_id,
+                'servicio_id' => $request->servicio_id,
+                'fecha'       => $request->fecha,
+                'hora'        => $request->hora,
+                'estado'      => 'confirmada',
+                'barberia_id' => $servicioNuevo->barberia_id,
+            ]);
+
+            return ['cita' => $cita];
+        });
+
+        if (isset($resultado['error'])) {
+            return response()->json(['message' => $resultado['error']], $resultado['status']);
         }
 
-        $cita = Cita::create([
-            'cliente_id'  => $request->user()->id,
-            'barbero_id'  => $request->barbero_id,
-            'servicio_id' => $request->servicio_id,
-            'fecha'       => $request->fecha,
-            'hora'        => $request->hora,
-            'estado'      => 'confirmada',
-            'barberia_id' => $servicioNuevo->barberia_id,
-        ]);
+        $cita = $resultado['cita'];
 
         $cita->load(['barbero', 'servicio', 'cliente']);
 
@@ -227,31 +247,48 @@ class CitaController extends Controller
             ], 409);
         }
 
-        // Anti-choques (excluyendo ESTA cita)
         $nuevoInicio = Carbon::parse($request->hora);
         $nuevoFin    = $nuevoInicio->copy()->addMinutes($cita->servicio->duracion ?? 30);
 
-        $otrasCitas = Cita::with('servicio')
-            ->where('barbero_id', $cita->barbero_id)
-            ->where('fecha', $request->fecha)
-            ->where('estado', '!=', 'cancelada')
-            ->where('id', '!=', $cita->id)->get();
+        // Mismo lock que en store(): serializa reservas/reagendos concurrentes
+        // sobre el mismo barbero para evitar la doble reserva.
+        $resultado = DB::transaction(function () use ($request, $cita, $nuevoInicio, $nuevoFin) {
+            $barbero = User::where('id', $cita->barbero_id)->lockForUpdate()->first();
 
-        foreach ($otrasCitas as $otra) {
-            $dur    = $otra->servicio->duracion ?? 30;
-            $inicio = Carbon::parse($otra->hora);
-            $fin    = $inicio->copy()->addMinutes($dur);
-            if ($nuevoInicio < $fin && $nuevoFin > $inicio) {
-                return response()->json([
-                    'error' => 'Ese horario ya está reservado para otra cita.',
-                ], 409);
+            if ($error = $this->errorFueraDeTurno($barbero, $nuevoInicio, $nuevoFin)) {
+                return ['error' => $error, 'status' => 422];
             }
-        }
 
-        // 🔧 FIX #13: NO sobrescribimos el estado. Si era pendiente queda pendiente.
-        $cita->fecha = $request->fecha;
-        $cita->hora  = $request->hora;
-        $cita->save();
+            // Anti-choques (excluyendo ESTA cita)
+            $otrasCitas = Cita::with('servicio')
+                ->where('barbero_id', $cita->barbero_id)
+                ->where('fecha', $request->fecha)
+                ->where('estado', '!=', 'cancelada')
+                ->where('id', '!=', $cita->id)->get();
+
+            foreach ($otrasCitas as $otra) {
+                $dur    = $otra->servicio->duracion ?? 30;
+                $inicio = Carbon::parse($otra->hora);
+                $fin    = $inicio->copy()->addMinutes($dur);
+                if ($nuevoInicio < $fin && $nuevoFin > $inicio) {
+                    return [
+                        'error'  => 'Ese horario ya está reservado para otra cita.',
+                        'status' => 409,
+                    ];
+                }
+            }
+
+            // 🔧 FIX #13: NO sobrescribimos el estado. Si era pendiente queda pendiente.
+            $cita->fecha = $request->fecha;
+            $cita->hora  = $request->hora;
+            $cita->save();
+
+            return [];
+        });
+
+        if (isset($resultado['error'])) {
+            return response()->json(['error' => $resultado['error']], $resultado['status']);
+        }
 
         $cita->load(['cliente', 'barbero', 'servicio']);
 
@@ -476,6 +513,33 @@ class CitaController extends Controller
         });
 
         return response()->json(['message' => '¡Gracias por tu valoración!', 'cita' => $cita], 200);
+    }
+
+    /**
+     * La cita debe caber COMPLETA dentro del turno del barbero
+     * (antes esta regla solo existía en el frontend y un POST directo
+     * podía agendar a cualquier hora o desbordar el cierre).
+     */
+    private function errorFueraDeTurno(?User $barbero, Carbon $horaInicio, Carbon $horaFin): ?string
+    {
+        if (!$barbero) {
+            return 'El barbero seleccionado no existe.';
+        }
+
+        $inicioTurno = Carbon::parse($barbero->hora_inicio ?? '10:00')
+            ->setDate($horaInicio->year, $horaInicio->month, $horaInicio->day);
+        $finTurno    = Carbon::parse($barbero->hora_fin ?? '19:00')
+            ->setDate($horaInicio->year, $horaInicio->month, $horaInicio->day);
+
+        if ($horaInicio < $inicioTurno || $horaFin > $finTurno) {
+            return sprintf(
+                'El horario elegido no está disponible: el turno del barbero es de %s a %s y el servicio debe terminar antes del cierre.',
+                $inicioTurno->format('H:i'),
+                $finTurno->format('H:i')
+            );
+        }
+
+        return null;
     }
 
     private function formatearTiempo(int $minutosTotal): string
