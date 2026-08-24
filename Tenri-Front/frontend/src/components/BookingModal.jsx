@@ -39,11 +39,21 @@ export default function BookingModal({
 
   const hoyLocal = new Date().toLocaleDateString("sv-SE");
 
+  const duracionServicio =
+    servicio?.duracion ?? servicio?.duracion_minutos ?? citaExistente?.servicio?.duracion_minutos ?? 30;
+
   // 🎯 UX: scroll instantáneo al top cuando el modal se abre.
   // Sin overflow lock — el modal usa fixed inset-0, cubre todo el viewport.
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // Cerrar con Escape
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   // Cargar barberos al abrir (solo si no es reagendamiento)
   useEffect(() => {
@@ -93,7 +103,9 @@ export default function BookingModal({
         const fin  = hf * 60 + mf;
         const malla = [];
 
-        while (actual < fin) {
+        // El servicio debe caber COMPLETO antes del cierre — el backend
+        // rechaza los slots que desbordan, así que no los ofrecemos.
+        while (actual + duracionServicio <= fin) {
           if (actual >= 840 && actual < 900) { actual += 30; continue; }
           const h = Math.floor(actual / 60).toString().padStart(2, "0");
           const m = (actual % 60).toString().padStart(2, "0");
@@ -105,7 +117,7 @@ export default function BookingModal({
       finally { if (activo) setCargandoHoras(false); }
     })();
     return () => { activo = false; };
-  }, [barberoId, fecha, esReagendar]);
+  }, [barberoId, fecha, esReagendar, duracionServicio]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -179,8 +191,14 @@ export default function BookingModal({
   );
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center bg-slate-900/40 dark:bg-[#03070e]/80 backdrop-blur-md p-0 sm:p-4 sm:pt-8 pt-16 animate-fade-in">
+    <div
+      className="fixed inset-0 z-[100] flex items-start justify-center bg-slate-900/40 dark:bg-[#03070e]/80 backdrop-blur-md p-0 sm:p-4 sm:pt-8 pt-16 animate-fade-in"
+      onClick={onClose}
+    >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={esReagendar ? "Reagendar cita" : `Reservar ${servicio?.nombre || "servicio"}`}
         className="bg-white dark:bg-[#0B1221] border-t sm:border border-slate-200 dark:border-slate-800/60 sm:rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
@@ -306,7 +324,7 @@ export default function BookingModal({
                               ? "bg-slate-50 dark:bg-slate-900/40 text-slate-300 dark:text-slate-700 cursor-not-allowed"
                               : selected
                                 ? "bg-emerald-500 text-white dark:text-[#03070e] shadow-md shadow-emerald-500/30 scale-[1.04] font-bold"
-                                : "bg-white dark:bg-[#03070e] border border-slate-200 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 hover:border-emerald-500/50 hover:bg-emerald-50/30 dark:hover:bg-emerald-500/5"
+                                : "bg-white dark:bg-[#03070e] border border-slate-200 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 hover:border-emerald-500/50 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50/30 dark:hover:bg-emerald-500/5"
                           }`}
                         >
                           <span className={bloqueado ? "line-through decoration-rose-400/50" : ""}>{h}</span>
@@ -326,6 +344,18 @@ export default function BookingModal({
         </div>
 
         {/* FOOTER */}
+        {fecha && hora && (
+          <p className="px-6 sm:px-8 py-2.5 border-t border-slate-200 dark:border-slate-800/60 bg-emerald-50/60 dark:bg-emerald-500/5 text-sm text-emerald-900 dark:text-emerald-100/80 text-center animate-fade-in">
+            <span className="font-semibold text-emerald-700 dark:text-emerald-400 capitalize">
+              {new Date(`${fecha}T12:00:00`).toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}
+            </span>
+            {" a las "}
+            <span className="font-semibold tabular">{hora}</span>
+            {!esReagendar && barberos.find((b) => b.id === barberoId)?.name && (
+              <> con <span className="font-semibold">{barberos.find((b) => b.id === barberoId).name}</span></>
+            )}
+          </p>
+        )}
         <div className="px-6 sm:px-8 py-4 border-t border-slate-200 dark:border-slate-800/60 bg-slate-50/50 dark:bg-[#080d18] flex gap-3">
           <button type="button" onClick={onClose}
                   className="px-5 py-3 rounded-xl font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800/50 transition-colors">

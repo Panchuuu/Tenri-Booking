@@ -29,14 +29,13 @@ export default function BarberiaDetallePage() {
   const { slug } = useParams();
   const [servicioSeleccionado, setServicioSeleccionado] = useState(null);
 
-  const { data: barberiasData } = useApi("/barberias", {
-    transformar: (json) => json.data || json,
-  });
-  const barberia = (barberiasData || []).find((b) => b.slug === slug);
+  // Fetch directo por slug: antes se buscaba en la página 1 del listado,
+  // así que las barberías 11+ salían como "no encontrada".
+  const { data: barberia, error: errorBarberia } = useApi(`/barberias/${slug}`, { skip: !slug });
 
   const { data: servicios, cargando } = useApi(`/servicios?barberia=${slug}`, { skip: !slug });
 
-  if (!barberia && barberiasData) {
+  if (!barberia && errorBarberia) {
     return (
       <div className="page-transition max-w-3xl mx-auto px-6 py-32 text-center">
         <h2 className="font-display text-4xl font-semibold text-slate-900 dark:text-white mb-4">

@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import useApi from "../hooks/useApi";
+import apiFetch from "../utils/api";
 import SkeletonCard from "../components/SkeletonCard";
 import { SearchIcon } from "../components/Icons";
 import heroImage from "../assets/hero.png";
@@ -56,10 +56,42 @@ function BarberiaCard({ barberia, index }) {
 export default function LandingPage() {
   const [busqueda, setBusqueda] = useState("");
 
-  const { data, cargando } = useApi("/barberias", {
-    transformar: (json) => json.data || json,
-  });
-  const barberias = data || [];
+  // Paginación acumulativa: antes solo se pedía la página 1 y las
+  // barberías 11+ nunca aparecían en el directorio.
+  const [barberias, setBarberias] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [cargandoMas, setCargandoMas] = useState(false);
+  const [paginacion, setPaginacion] = useState({ pagina: 1, ultima: 1, total: 0 });
+
+  const cargarPagina = useCallback(async (pagina) => {
+    try {
+      const r = await apiFetch(`/barberias?per_page=12&page=${pagina}`);
+      if (!r.ok) return;
+      const json = await r.json();
+      setBarberias((prev) => {
+        const vistos = new Set(prev.map((b) => b.id));
+        return [...prev, ...(json.data || []).filter((b) => !vistos.has(b.id))];
+      });
+      setPaginacion({ pagina: json.current_page, ultima: json.last_page, total: json.total });
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      await cargarPagina(1);
+      setCargando(false);
+    })();
+  }, [cargarPagina]);
+
+  const cargarMas = async () => {
+    setCargandoMas(true);
+    await cargarPagina(paginacion.pagina + 1);
+    setCargandoMas(false);
+  };
+
+  const hayMas = paginacion.pagina < paginacion.ultima;
 
   const barberiasFiltradas = useMemo(() => {
     const q = busqueda.toLowerCase().trim();
@@ -76,17 +108,10 @@ export default function LandingPage() {
 
           {/* Texto */}
           <div className="relative z-10 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/60 dark:border-emerald-500/20 animate-fade-in-down">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-glow-pulse" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-400">
-                Plataforma multi-negocio
-              </span>
-            </div>
-
-            <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-bold text-slate-900 dark:text-white leading-[1.05] tracking-tight mb-6 animate-fade-in-up">
+            <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-semibold text-slate-900 dark:text-white leading-[1.05] tracking-tight mb-6 animate-fade-in-up" style={{ textWrap: "balance" }}>
               Encuentra tu estilo,
               <br />
-              <span className="italic text-gradient-brand">
+              <span className="italic font-medium text-emerald-600 dark:text-emerald-400">
                 reserva al instante.
               </span>
             </h1>
@@ -107,19 +132,21 @@ export default function LandingPage() {
               />
             </div>
 
-            {/* Trust metrics */}
-            <div className="flex justify-center lg:justify-start gap-8 mt-12 animate-fade-in-up delay-500">
+            {/* Cómo funciona — beneficios reales, no métricas de relleno */}
+            <ul className="flex flex-col sm:flex-row justify-center lg:justify-start gap-3 sm:gap-6 mt-10 animate-fade-in-up delay-500 text-sm text-slate-600 dark:text-slate-400 font-medium">
               {[
-                { num: barberias.length || "—", lbl: "Barberías" },
-                { num: "24/7",                  lbl: "Disponible" },
-                { num: "★",                     lbl: "Calidad premium" },
-              ].map((s) => (
-                <div key={s.lbl} className="text-center lg:text-left">
-                  <p className="font-display text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white tabular">{s.num}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mt-1">{s.lbl}</p>
-                </div>
+                "Elige barbero, día y hora",
+                "Confirmación por correo",
+                "Reagenda o cancela online",
+              ].map((f) => (
+                <li key={f} className="flex items-center justify-center lg:justify-start gap-2">
+                  <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  {f}
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
 
           {/* Imagen Hero — solo desktop */}
@@ -163,16 +190,15 @@ export default function LandingPage() {
         {/* Header sección */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
           <div>
-            <span className="tag-pill text-emerald-600 dark:text-emerald-400 mb-3">
-              Directorio
-            </span>
-            <h2 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white leading-tight">
+            <h2 className="font-display text-3xl sm:text-4xl font-semibold text-slate-900 dark:text-white leading-tight">
               {busqueda ? `Resultados para "${busqueda}"` : "Barberías destacadas"}
             </h2>
           </div>
           {!cargando && (
             <p className="text-sm text-slate-500 font-medium">
-              {barberiasFiltradas.length} {barberiasFiltradas.length === 1 ? "establecimiento" : "establecimientos"}
+              {busqueda
+                ? `${barberiasFiltradas.length} ${barberiasFiltradas.length === 1 ? "resultado" : "resultados"}`
+                : `${paginacion.total} ${paginacion.total === 1 ? "establecimiento" : "establecimientos"}`}
             </p>
           )}
         </div>
@@ -204,11 +230,31 @@ export default function LandingPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {barberiasFiltradas.map((barberia, idx) => (
-              <BarberiaCard key={barberia.id} barberia={barberia} index={idx} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+              {barberiasFiltradas.map((barberia, idx) => (
+                <BarberiaCard key={barberia.id} barberia={barberia} index={idx} />
+              ))}
+            </div>
+
+            {hayMas && !busqueda && (
+              <div className="text-center mt-12">
+                <button
+                  onClick={cargarMas}
+                  disabled={cargandoMas}
+                  className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-[0.98] transition-all"
+                >
+                  {cargandoMas && (
+                    <span className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                  )}
+                  Mostrar más barberías
+                  <span className="text-slate-400 dark:text-slate-500 font-normal tabular">
+                    ({barberias.length} de {paginacion.total})
+                  </span>
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>

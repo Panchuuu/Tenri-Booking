@@ -12,9 +12,11 @@
    🎯 DESIGN TOKENS
    ============================================================ */
 :root {
-  /* Typography */
-  --font-display: "Inter", system-ui, sans; 
-  --font-body:    "Inter", system-ui, sans;
+  /* Typography — Fraunces (display serif) + DM Sans (body), importadas arriba.
+     Antes apuntaban a "Inter", que nunca se importó: toda la app caía a la
+     fuente del sistema y las fuentes cargadas quedaban sin uso. */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-body:    "DM Sans", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   /* Brand */
@@ -63,7 +65,8 @@ html, body {
   background-color: var(--bg);
 }
 
-.dark html, .dark body { background-color: var(--bg-dark); }
+/* .dark vive en <html>, así que html necesita el selector directo */
+html.dark, html.dark body { background-color: var(--bg-dark); }
 
 /* Display headings — serif distintivo */
 h1, h2, h3, .font-display {
@@ -147,14 +150,6 @@ h1, h2, h3, .font-display {
 /* ============================================================
    🧱 UTILIDADES PERSONALIZADAS
    ============================================================ */
-
-/* Texto con gradiente animado (titulares) */
-.text-gradient-brand {
-  background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #06b6d4 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
 
 /* Texto con underline curvo decorativo (SVG inline-bg) */
 .underline-wavy {
@@ -280,6 +275,12 @@ h1, h2, h3, .font-display {
 ::selection {
   background: rgba(16, 185, 129, 0.25);
   color: inherit;
+}
+
+/* Superficies del navegador: caret y controles nativos con la marca */
+input, textarea, select {
+  caret-color: var(--brand-500);
+  accent-color: var(--brand-500);
 }
 
 /* Aspect ratios útiles */

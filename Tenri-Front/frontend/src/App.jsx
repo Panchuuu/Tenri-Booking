@@ -14,6 +14,7 @@ import ErrorBoundary  from "./components/ErrorBoundary";
 
 import LandingPage          from "./pages/LandingPage";
 import BarberiaDetallePage  from "./pages/BarberiaDetallePage";
+import NotFoundPage         from "./pages/NotFoundPage";
 
 import MisReservasPage from "./pages/MisReservasPage";
 import BarberoPage     from "./pages/BarberoPage";
@@ -53,6 +54,7 @@ export default function App() {
               <Route element={<PublicLayout />}>
                 <Route path="/"               element={<LandingPage />} />
                 <Route path="/barberia/:slug" element={<BarberiaDetallePage />} />
+                <Route path="*"               element={<NotFoundPage />} />
               </Route>
 
               {/* ADMIN */}
@@ -110,7 +112,6 @@ export default function App() {
                 <Route index element={<MisReservasPage />} />
               </Route>
 
-              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>
         </AuthProvider>

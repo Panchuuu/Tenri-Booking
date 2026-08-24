@@ -18,6 +18,18 @@ class BarberiaAdminTest extends TestCase
         return [$admin, $barberia];
     }
 
+    public function test_barberia_publica_por_slug(): void
+    {
+        $barberia = Barberia::factory()->create();
+
+        $this->getJson("/api/barberias/{$barberia->slug}")
+             ->assertStatus(200)
+             ->assertJsonPath('id', $barberia->id);
+
+        $this->getJson('/api/barberias/slug-inexistente')
+             ->assertStatus(404);
+    }
+
     public function test_admin_puede_ver_su_barberia(): void
     {
         [$admin, $barberia] = $this->crearAdminConBarberia();

@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/servicios', [ServicioController::class, 'index']);
 Route::get('/barberos', [BarberoController::class, 'index']);
 Route::get('/barberias', [BarberiaController::class, 'index']);
+Route::get('/barberias/{slug}', [BarberiaController::class, 'showPorSlug']);
 Route::get('/barberos/{id}/disponibilidad', [CitaController::class, 'disponibilidad']);
 
 Route::middleware('throttle:10,1')->group(function () {

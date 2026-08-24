@@ -15,9 +15,20 @@ use Illuminate\Support\Str;
 
 class BarberiaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Barberia::paginate(10));
+        $porPagina = min((int) $request->query('per_page', 12), 50);
+
+        return response()->json(Barberia::orderBy('nombre')->paginate($porPagina));
+    }
+
+    /**
+     * Detalle público por slug. El frontend antes buscaba el slug en la
+     * página 1 del listado: las barberías 11+ quedaban inaccesibles.
+     */
+    public function showPorSlug(string $slug)
+    {
+        return response()->json(Barberia::where('slug', $slug)->firstOrFail());
     }
 
     public function store(StoreBarberiaRequest $request)
