@@ -54,6 +54,10 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // URL pública del frontend para links en emails. FRONTEND_URL puede ser
+    // una lista separada por comas (se usa también para CORS): tomamos la primera.
+    'frontend_url' => explode(',', env('FRONTEND_URL', 'http://localhost:5173'))[0],
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

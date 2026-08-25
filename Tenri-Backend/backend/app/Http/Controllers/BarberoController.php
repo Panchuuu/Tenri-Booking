@@ -129,14 +129,12 @@ class BarberoController extends Controller
             ->whereNotIn('estado', ['finalizada', 'cancelada'])
             ->get();
 
-        $cantidadCanceladas = 0;
-        $erroresEmail       = 0;
+        $cantidadCanceladas = $citasActivas->count();
 
-        DB::transaction(function () use ($usuario, $citasActivas, &$cantidadCanceladas) {
+        DB::transaction(function () use ($usuario, $citasActivas) {
             foreach ($citasActivas as $cita) {
                 $cita->estado = 'cancelada';
                 $cita->save();
-                $cantidadCanceladas++;
             }
 
             // Despasamos al barbero a cliente normal
@@ -145,26 +143,26 @@ class BarberoController extends Controller
             $usuario->save();
         });
 
-        // 📧 Los correos se envían DESPUÉS del commit: si la transacción
+        // 📧 Los correos se encolan DESPUÉS del commit: si la transacción
         // fallara, ningún cliente recibiría un aviso de una cancelación
-        // que nunca ocurrió.
+        // que nunca ocurrió. Como CitaCanceladaMail es ShouldQueue, send()
+        // solo encola el job; un fallo SMTP real se vería en el worker,
+        // no aquí (este catch cubre solo fallos al encolar).
         foreach ($citasActivas as $cita) {
             try {
                 if ($cita->cliente && $cita->cliente->email) {
                     Mail::to($cita->cliente->email)->send(new CitaCanceladaMail($cita));
                 }
             } catch (\Throwable $e) {
-                $erroresEmail++;
-                \Log::warning("Error al enviar email cita #{$cita->id}: " . $e->getMessage());
+                \Log::warning("Error al encolar email cita #{$cita->id}: " . $e->getMessage());
             }
         }
 
         return response()->json([
             'mensaje'             => 'Barbero removido del equipo',
             'citas_canceladas'    => $cantidadCanceladas,
-            'errores_email'       => $erroresEmail,
             'detalle'             => $cantidadCanceladas > 0
-                ? "Se cancelaron {$cantidadCanceladas} citas activas y se notificó a los clientes."
+                ? "Se cancelaron {$cantidadCanceladas} citas activas y se notificará a los clientes por correo."
                 : 'El barbero no tenía citas activas.',
         ]);
     }

@@ -30,6 +30,30 @@ class BarberiaAdminTest extends TestCase
              ->assertStatus(404);
     }
 
+    public function test_listado_publico_tolera_per_page_invalido(): void
+    {
+        Barberia::factory()->count(3)->create();
+
+        // per_page=0/negativo/no-numérico rompía paginate() con
+        // DivisionByZeroError (500) en un endpoint público.
+        $this->getJson('/api/barberias?per_page=0')
+             ->assertStatus(200)
+             ->assertJsonPath('per_page', 1);
+
+        $this->getJson('/api/barberias?per_page=-5')
+             ->assertStatus(200)
+             ->assertJsonPath('per_page', 1);
+
+        $this->getJson('/api/barberias?per_page=abc')
+             ->assertStatus(200)
+             ->assertJsonPath('per_page', 1);
+
+        // El tope superior sigue vigente
+        $this->getJson('/api/barberias?per_page=999')
+             ->assertStatus(200)
+             ->assertJsonPath('per_page', 50);
+    }
+
     public function test_superadmin_sin_barberia_recibe_403_en_mi_barberia(): void
     {
         $superadmin = User::factory()->superadmin()->create();

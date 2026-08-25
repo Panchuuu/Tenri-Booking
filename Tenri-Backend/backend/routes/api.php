@@ -6,6 +6,7 @@ use App\Http\Controllers\SuperAdminUsuarioController;
 use App\Http\Controllers\BarberoController;
 use App\Http\Controllers\BloqueoHorarioController;
 use App\Http\Controllers\CitaController;
+use App\Http\Controllers\FavoritoController;
 use App\Http\Controllers\ServicioController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 // ==========================================
 // 🔓 PÚBLICAS
 // ==========================================
+Route::get('/rubros',    [BarberiaController::class, 'rubros']);
 Route::get('/servicios', [ServicioController::class, 'index']);
 Route::get('/barberos', [BarberoController::class, 'index']);
 Route::get('/barberias', [BarberiaController::class, 'index']);
@@ -54,8 +56,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/finanzas/resumen', [CitaController::class, 'resumenPorPeriodo']);
 
         // Barbería
-        Route::get('/mi-barberia', [BarberiaController::class, 'miBarberia']);
-        Route::put('/mi-barberia', [BarberiaController::class, 'updateConfig']);
+        Route::get('/mi-barberia',  [BarberiaController::class, 'miBarberia']);
+        Route::put('/mi-barberia',  [BarberiaController::class, 'updateConfig']);
+        // POST + _method=PUT para multipart (subida de logo desde Mi Tienda)
+        Route::post('/mi-barberia', [BarberiaController::class, 'updateConfig'])->middleware('throttle:30,1');
         Route::get('/mi-equipo',     [BarberiaController::class, 'miEquipo']);
         Route::get('/mis-servicios', [BarberiaController::class, 'misServicios']);
 
@@ -86,6 +90,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // 👤 COMUNES
     Route::get('/mis-reservas', [CitaController::class, 'misReservas']);
+
+    // ❤️ Favoritos: cualquier usuario autenticado puede marcar barberías.
+    Route::get ('/mis-favoritos',                 [FavoritoController::class, 'index']);
+    Route::post('/barberias/{id}/favorito',       [FavoritoController::class, 'toggle'])->middleware('throttle:30,1');
 
     // Escrituras de citas con rate limit: sin él, un script podía llenar
     // la agenda de un barbero o spamear calificaciones sin freno.

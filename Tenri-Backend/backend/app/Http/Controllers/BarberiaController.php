@@ -15,11 +15,33 @@ use Illuminate\Support\Str;
 
 class BarberiaController extends Controller
 {
+    /**
+     * Catálogo público de rubros (clave => etiqueta) para poblar los
+     * filtros del landing y el select del panel del dueño.
+     */
+    public function rubros()
+    {
+        return response()->json(
+            collect(Barberia::RUBROS)
+                ->map(fn ($etiqueta, $clave) => ['clave' => $clave, 'etiqueta' => $etiqueta])
+                ->values()
+        );
+    }
+
     public function index(Request $request)
     {
-        $porPagina = min((int) $request->query('per_page', 12), 50);
+        // Clamp inferior incluido: per_page=0/negativo/no-numérico rompería
+        // paginate() con DivisionByZeroError en un endpoint público.
+        $porPagina = max(1, min((int) $request->query('per_page', 12), 50));
 
-        return response()->json(Barberia::orderBy('nombre')->paginate($porPagina));
+        return response()->json(
+            Barberia::query()
+                ->with('servicios:id,barberia_id,nombre')
+                ->withAvg(['citas as calificacion_promedio' => fn ($q) => $q->whereNotNull('calificacion')], 'calificacion')
+                ->withCount(['citas as total_resenas' => fn ($q) => $q->whereNotNull('calificacion')])
+                ->orderBy('nombre')
+                ->paginate($porPagina)
+        );
     }
 
     /**
@@ -28,7 +50,12 @@ class BarberiaController extends Controller
      */
     public function showPorSlug(string $slug)
     {
-        return response()->json(Barberia::where('slug', $slug)->firstOrFail());
+        return response()->json(
+            Barberia::where('slug', $slug)
+                ->withAvg(['citas as calificacion_promedio' => fn ($q) => $q->whereNotNull('calificacion')], 'calificacion')
+                ->withCount(['citas as total_resenas' => fn ($q) => $q->whereNotNull('calificacion')])
+                ->firstOrFail()
+        );
     }
 
     public function store(StoreBarberiaRequest $request)
@@ -92,7 +119,42 @@ class BarberiaController extends Controller
         }
 
         $barberia = Barberia::findOrFail($request->user()->barberia_id);
-        $barberia->tiempo_cancelacion = $request->tiempo_cancelacion;
+
+        // Cada formulario del panel envía solo sus campos ('sometimes' en el
+        // FormRequest): aplicamos únicamente lo presente en el request.
+        if ($request->has('tiempo_cancelacion')) {
+            $barberia->tiempo_cancelacion = $request->tiempo_cancelacion;
+        }
+
+        // ── Perfil de la tienda (Mi Tienda) ──
+        // El slug NO se regenera al renombrar: es la URL pública y cambiarlo
+        // rompería links compartidos y códigos QR ya impresos.
+        if ($request->has('nombre')) {
+            $barberia->nombre = $request->nombre;
+        }
+        if ($request->has('rubro')) {
+            $barberia->rubro = $request->rubro;
+        }
+        if ($request->has('color_principal')) {
+            $barberia->color_principal = $request->color_principal;
+        }
+        if ($request->hasFile('logo')) {
+            if ($barberia->logo && Storage::disk('public')->exists($barberia->logo)) {
+                Storage::disk('public')->delete($barberia->logo);
+            }
+            $barberia->logo = $request->file('logo')->store('logos_barberias', 'public');
+        }
+
+        // Ubicación física (opcional): dirección visible + coordenadas
+        // para el "cerca de mí" del landing.
+        if ($request->has('direccion')) {
+            $barberia->direccion = $request->direccion ?: null;
+        }
+        if ($request->has('latitud')) {
+            $barberia->latitud  = $request->latitud !== null && $request->latitud !== '' ? $request->latitud : null;
+            $barberia->longitud = $request->longitud !== null && $request->longitud !== '' ? $request->longitud : null;
+        }
+
         $barberia->save();
 
         return response()->json([

@@ -72,4 +72,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(BloqueoHorario::class, 'barbero_id');
     }
+
+    public function barberiasFavoritas()
+    {
+        return $this->belongsToMany(Barberia::class, 'favoritos')->withTimestamps();
+    }
 }

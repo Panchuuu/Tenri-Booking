@@ -30,6 +30,11 @@ use Illuminate\Support\Facades\DB;
  */
 class CitaController extends Controller
 {
+    // Turno por defecto cuando el barbero no tiene horario configurado.
+    // Única fuente de verdad para errorFueraDeTurno() y disponibilidad().
+    private const TURNO_INICIO_DEFAULT = '10:00';
+    private const TURNO_FIN_DEFAULT    = '19:00';
+
     public function index(Request $request)
     {
         $query = Cita::with(['cliente', 'barbero', 'servicio'])
@@ -81,21 +86,11 @@ class CitaController extends Controller
             }
 
             // 🛡️ Anti-choques
-            $citasDelDia = Cita::with('servicio')
-                ->where('barbero_id', $request->barbero_id)
-                ->where('fecha', $request->fecha)
-                ->where('estado', '!=', 'cancelada')->get();
-
-            foreach ($citasDelDia as $ce) {
-                $dur     = $ce->servicio->duracion ?? 30;
-                $inicio  = Carbon::parse($ce->hora);
-                $fin     = $inicio->copy()->addMinutes($dur);
-                if ($horaInicio < $fin && $horaFin > $inicio) {
-                    return [
-                        'error'  => '¡Ups! Este horario acaba de ser reservado por otro cliente.',
-                        'status' => 409,
-                    ];
-                }
+            if ($this->haySolape($request->barbero_id, $request->fecha, $horaInicio, $horaFin)) {
+                return [
+                    'error'  => '¡Ups! Este horario acaba de ser reservado por otro cliente.',
+                    'status' => 409,
+                ];
             }
 
             $cita = Cita::create([
@@ -260,22 +255,11 @@ class CitaController extends Controller
             }
 
             // Anti-choques (excluyendo ESTA cita)
-            $otrasCitas = Cita::with('servicio')
-                ->where('barbero_id', $cita->barbero_id)
-                ->where('fecha', $request->fecha)
-                ->where('estado', '!=', 'cancelada')
-                ->where('id', '!=', $cita->id)->get();
-
-            foreach ($otrasCitas as $otra) {
-                $dur    = $otra->servicio->duracion ?? 30;
-                $inicio = Carbon::parse($otra->hora);
-                $fin    = $inicio->copy()->addMinutes($dur);
-                if ($nuevoInicio < $fin && $nuevoFin > $inicio) {
-                    return [
-                        'error'  => 'Ese horario ya está reservado para otra cita.',
-                        'status' => 409,
-                    ];
-                }
+            if ($this->haySolape($cita->barbero_id, $request->fecha, $nuevoInicio, $nuevoFin, $cita->id)) {
+                return [
+                    'error'  => 'Ese horario ya está reservado para otra cita.',
+                    'status' => 409,
+                ];
             }
 
             // 🔧 FIX #13: NO sobrescribimos el estado. Si era pendiente queda pendiente.
@@ -399,8 +383,8 @@ class CitaController extends Controller
                 'descripcion' => $bloqueo->descripcion,
                 'ocupadas'    => [],
                 'pasadas'     => [],
-                'hora_inicio' => date('H:i', strtotime($barbero->hora_inicio ?? '10:00')),
-                'hora_fin'    => date('H:i', strtotime($barbero->hora_fin    ?? '19:00')),
+                'hora_inicio' => date('H:i', strtotime($barbero->hora_inicio ?? self::TURNO_INICIO_DEFAULT)),
+                'hora_fin'    => date('H:i', strtotime($barbero->hora_fin    ?? self::TURNO_FIN_DEFAULT)),
             ]);
         }
 
@@ -425,8 +409,8 @@ class CitaController extends Controller
         $hoy = Carbon::now('America/Santiago');
 
         if ($fecha === $hoy->toDateString()) {
-            $horaInicioTurno = Carbon::parse($barbero->hora_inicio ?? '10:00', 'America/Santiago');
-            $horaFinTurno    = Carbon::parse($barbero->hora_fin    ?? '19:00', 'America/Santiago');
+            $horaInicioTurno = Carbon::parse($barbero->hora_inicio ?? self::TURNO_INICIO_DEFAULT, 'America/Santiago');
+            $horaFinTurno    = Carbon::parse($barbero->hora_fin    ?? self::TURNO_FIN_DEFAULT, 'America/Santiago');
             $horaLimite      = $hoy->copy()->addMinutes(15);
             while ($horaInicioTurno < $horaFinTurno) {
                 if ($horaInicioTurno <= $horaLimite) {
@@ -440,8 +424,8 @@ class CitaController extends Controller
             'bloqueado'   => false,
             'ocupadas'    => array_values(array_unique($ocupadas)),
             'pasadas'     => array_values(array_unique($pasadas)),
-            'hora_inicio' => date('H:i', strtotime($barbero->hora_inicio ?? '10:00')),
-            'hora_fin'    => date('H:i', strtotime($barbero->hora_fin    ?? '19:00')),
+            'hora_inicio' => date('H:i', strtotime($barbero->hora_inicio ?? self::TURNO_INICIO_DEFAULT)),
+            'hora_fin'    => date('H:i', strtotime($barbero->hora_fin    ?? self::TURNO_FIN_DEFAULT)),
         ]);
     }
 
@@ -528,9 +512,9 @@ class CitaController extends Controller
             return 'El barbero seleccionado no existe.';
         }
 
-        $inicioTurno = Carbon::parse($barbero->hora_inicio ?? '10:00')
+        $inicioTurno = Carbon::parse($barbero->hora_inicio ?? self::TURNO_INICIO_DEFAULT)
             ->setDate($horaInicio->year, $horaInicio->month, $horaInicio->day);
-        $finTurno    = Carbon::parse($barbero->hora_fin ?? '19:00')
+        $finTurno    = Carbon::parse($barbero->hora_fin ?? self::TURNO_FIN_DEFAULT)
             ->setDate($horaInicio->year, $horaInicio->month, $horaInicio->day);
 
         if ($horaInicio < $inicioTurno || $horaFin > $finTurno) {
@@ -542,6 +526,32 @@ class CitaController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * ¿La franja [$inicio, $fin) choca con otra cita activa del barbero
+     * ese día? Compartido por store() y reagendar() para que la regla de
+     * solapamiento viva en un solo lugar.
+     */
+    private function haySolape(int $barberoId, string $fecha, Carbon $inicio, Carbon $fin, ?int $excluirCitaId = null): bool
+    {
+        $citas = Cita::with('servicio')
+            ->where('barbero_id', $barberoId)
+            ->where('fecha', $fecha)
+            ->where('estado', '!=', 'cancelada')
+            ->when($excluirCitaId !== null, fn ($q) => $q->where('id', '!=', $excluirCitaId))
+            ->get();
+
+        foreach ($citas as $otra) {
+            $dur      = $otra->servicio->duracion ?? 30;
+            $iniOtra  = Carbon::parse($otra->hora);
+            $finOtra  = $iniOtra->copy()->addMinutes($dur);
+            if ($inicio < $finOtra && $fin > $iniOtra) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function formatearTiempo(int $minutosTotal): string

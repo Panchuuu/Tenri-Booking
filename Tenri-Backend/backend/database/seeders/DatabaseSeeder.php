@@ -15,6 +15,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // 🔒 Todos los seeders crean datos de demo: el guard vive aquí (el
+        // punto de entrada de db:seed) y no solo en seeders individuales,
+        // para que ningún seeder futuro se olvide de protegerse.
+        if (app()->environment('production')) {
+            $this->command?->warn('Seeders omitidos: no se crean datos de prueba en producción.');
+            return;
+        }
+
         // Llamamos a nuestros seeders creados
         $this->call([
             ServicioSeeder::class,
