@@ -2,10 +2,11 @@
 
 /**
  * ============================================================
- * Puente booking.tenri.cl/api → Laravel (~/booking_backend)
+ * Puente booking.tenri.cl/api → Laravel (../booking_backend)
  * ============================================================
- * En el hosting cPanel el frontend vive en public_html/ y el
- * backend Laravel en ~/booking_backend (fuera del docroot).
+ * En el hosting (DirectAdmin) el frontend vive en
+ * domains/<dominio>/public_html/ y el backend Laravel en
+ * domains/<dominio>/booking_backend (fuera del docroot).
  * Este archivo se sube como public_html/api/index.php y hace
  * de front-controller: toda petición /api/* entra por aquí.
  *
@@ -20,7 +21,7 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
-// public_html/api/ → public_html/ → home del usuario → booking_backend
+// public_html/api/ → public_html/ → domains/<dominio>/ → booking_backend
 $backendPath = dirname(__DIR__, 2) . '/booking_backend';
 
 if (!is_file($backendPath . '/vendor/autoload.php')) {

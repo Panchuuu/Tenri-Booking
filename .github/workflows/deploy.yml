@@ -105,6 +105,8 @@ jobs:
           cd Tenri-Front/frontend
           pnpm build
 
+      # DirectAdmin: el FTP de la cuenta principal entra en el HOME del
+      # usuario, y el docroot del dominio vive en domains/<dominio>/public_html
       - name: 🚀 Subir frontend a public_html (FTP)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
@@ -112,7 +114,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: Tenri-Front/frontend/dist/
-          server-dir: ./
+          server-dir: domains/booking.tenri.cl/public_html/
 
       # ── Backend ───────────────────────────────
       - name: ⚙️ Setup PHP 8.2
@@ -140,26 +142,28 @@ jobs:
             -x "storage/framework/sessions/*" \
             -x "storage/framework/views/*"
 
+      # El puente public_html/api/index.php busca el backend en
+      # ../../booking_backend, o sea domains/<dominio>/booking_backend
       - name: 🚀 Subir backend comprimido (FTP)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME_ROOT }}
-          password: ${{ secrets.FTP_PASSWORD_ROOT }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./_deploy/
-          server-dir: booking_backend/
+          server-dir: domains/booking.tenri.cl/booking_backend/
 
       # ── Notificar deploy completado ───────────
       - name: ✅ Deploy de archivos completado
         run: |
-          echo "✅ Frontend y backend subidos via FTP"
-          echo "⚠️ Ejecuta en el servidor (el zip se descomprime EN la raíz de booking_backend):"
-          echo "   cd ~/booking_backend"
+          echo "✅ Frontend y backend subidos via FTP (DirectAdmin)"
+          echo "⚠️ Ejecuta en el servidor (SSH o terminal de DirectAdmin):"
+          echo "   cd ~/domains/booking.tenri.cl/booking_backend"
           echo "   unzip -o backend.zip && rm backend.zip"
           echo "   php artisan migrate --force"
           echo "   php artisan optimize:clear"
           echo ""
           echo "📋 Setup de primera vez (solo una vez): ver docs/DEPLOY.md"
           echo "   - Crear .env desde .env.production.example + php artisan key:generate"
-          echo "   - ln -s ~/booking_backend/storage/app/public ~/public_html/storage"
-          echo "   - Cron de cPanel para la cola de emails (o QUEUE_CONNECTION=sync)"
+          echo "   - ln -s ../booking_backend/storage/app/public ~/domains/booking.tenri.cl/public_html/storage"
+          echo "   - Cron de DirectAdmin para la cola de emails (o QUEUE_CONNECTION=sync)"
