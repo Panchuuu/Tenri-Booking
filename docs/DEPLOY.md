@@ -33,16 +33,14 @@ Anota: nombre de BD, usuario y contraseña (DirectAdmin los prefija con tu usuar
 p. ej. `usuario_booking`).
 
 ### 2. Secrets del FTP para GitHub Actions
-El FTP de la **cuenta principal** de DirectAdmin entra directo en el home (`~`),
-que es lo que el workflow espera. En GitHub → repo → Settings → Secrets → Actions:
+Se usan **dos cuentas FTP** con raíces distintas (GitHub → repo → Settings →
+Secrets → Actions):
 
 | Secret | Valor |
 |---|---|
-| `FTP_SERVER` | host FTP (normalmente `ftp.tudominio` o la IP del servidor) |
-| `FTP_USERNAME` | usuario principal de DirectAdmin |
-| `FTP_PASSWORD` | su contraseña |
-
-(Ya no se usan `FTP_USERNAME_ROOT`/`FTP_PASSWORD_ROOT`; una sola cuenta basta.)
+| `FTP_SERVER` | host FTP del servidor |
+| `FTP_USERNAME` / `FTP_PASSWORD` | cuenta FTP con raíz **en el docroot** `domains/booking.tenri.cl/public_html` (frontend) |
+| `FTP_USERNAME_ROOT` / `FTP_PASSWORD_ROOT` | cuenta principal de DirectAdmin, raíz en el **home** `~` (backend) |
 
 ### 3. Configurar el `.env` del backend
 Tras el **primer deploy** (que crea `booking_backend/` con `backend.zip` dentro),

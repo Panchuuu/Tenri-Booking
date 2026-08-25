@@ -105,8 +105,8 @@ jobs:
           cd Tenri-Front/frontend
           pnpm build
 
-      # DirectAdmin: el FTP de la cuenta principal entra en el HOME del
-      # usuario, y el docroot del dominio vive en domains/<dominio>/public_html
+      # La cuenta FTP_USERNAME tiene su raíz EN el docroot de booking
+      # (domains/booking.tenri.cl/public_html), por eso server-dir es ./
       - name: 🚀 Subir frontend a public_html (FTP)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
@@ -114,7 +114,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: Tenri-Front/frontend/dist/
-          server-dir: domains/booking.tenri.cl/public_html/
+          server-dir: ./
 
       # ── Backend ───────────────────────────────
       - name: ⚙️ Setup PHP 8.2
@@ -142,14 +142,15 @@ jobs:
             -x "storage/framework/sessions/*" \
             -x "storage/framework/views/*"
 
+      # La cuenta FTP_*_ROOT tiene su raíz en el HOME del usuario DirectAdmin.
       # El puente public_html/api/index.php busca el backend en
-      # ../../booking_backend, o sea domains/<dominio>/booking_backend
+      # ../../booking_backend, o sea domains/booking.tenri.cl/booking_backend
       - name: 🚀 Subir backend comprimido (FTP)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
+          username: ${{ secrets.FTP_USERNAME_ROOT }}
+          password: ${{ secrets.FTP_PASSWORD_ROOT }}
           local-dir: ./_deploy/
           server-dir: domains/booking.tenri.cl/booking_backend/
 
