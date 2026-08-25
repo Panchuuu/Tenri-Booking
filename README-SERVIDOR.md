@@ -12,16 +12,29 @@ Pega solo los comandos, sin las comillas ``` de formato.
 
 ## 1. Migración única a la estructura nueva
 
-**Espera a que el último run de GitHub Actions esté en verde** y luego pega:
+### Fase A — preparación (ANTES de relanzar el deploy)
+
+El `api` del docroot es un symlink de la época anterior que el FTP no puede
+atravesar (error 550). Hay que quitarlo y dejar listo el backend definitivo:
 
 ```bash
-# Borrar el zip viejo obsoleto para que no pise al nuevo
-rm -f ~/booking_backend/backend.zip
+# Ver a donde apunta el api viejo (solo informativo, mandame la salida)
+readlink -f ~/domains/booking.tenri.cl/public_html/api
 
-# Copiar el backend antiguo (con su .env real) a la ubicación definitiva
+# Quitar el api viejo (sin barra final: borra el enlace, no su destino)
+rm -rf ~/domains/booking.tenri.cl/public_html/api
+
+# Preparar el backend definitivo con el .env real del backend antiguo
+rm -f ~/booking_backend/backend.zip
 mkdir -p ~/domains/booking.tenri.cl/booking_backend
 cp -a ~/booking_backend/. ~/domains/booking.tenri.cl/booking_backend/
+```
 
+> La API queda caída desde este momento hasta terminar la Fase B (minutos).
+
+### Fase B — cierre (DESPUÉS de que el deploy quede en verde)
+
+```bash
 # Descomprimir el codigo nuevo que dejo el pipeline y migrar
 cd ~/domains/booking.tenri.cl/booking_backend
 unzip -o backend.zip && rm backend.zip
