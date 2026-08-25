@@ -12,20 +12,20 @@ import { SearchIcon } from "../../components/Icons";
 
 function getBadgeStyle(estado) {
   const estados = {
-    pendiente:  "text-amber-600 bg-amber-100 dark:text-amber-400 dark:bg-amber-400/10",
-    confirmada: "text-cyan-600 bg-cyan-100 dark:text-cyan-400 dark:bg-cyan-400/10",
-    finalizada: "text-emerald-600 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-400/10",
-    cancelada:  "text-rose-600 bg-rose-100 dark:text-rose-400 dark:bg-rose-400/10",
+    pendiente:  "text-[#956400] bg-[#FBF3DB] dark:text-amber-400 dark:bg-amber-400/10",
+    confirmada: "text-[#1F6C9F] bg-[#E1F3FE] dark:text-cyan-400 dark:bg-cyan-400/10",
+    finalizada: "text-[#346538] bg-[#EDF3EC] dark:text-emerald-400 dark:bg-emerald-400/10",
+    cancelada:  "text-[#9F2F2D] bg-[#FDEBEC] dark:text-rose-400 dark:bg-rose-400/10",
   };
-  return estados[estado?.toLowerCase()] || "text-slate-500 bg-slate-100 dark:bg-slate-800";
+  return estados[estado?.toLowerCase()] || "text-[#787774] bg-[#F7F6F3] dark:bg-slate-800";
 }
 
 function StatCard({ titulo, valor, children }) {
   return (
-    <div className="bg-white dark:bg-[#0B1221] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-5 sm:p-6 shadow-sm">
-      <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">{titulo}</p>
+    <div className="bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl p-5 sm:p-6 shadow-none">
+      <p className="text-[#787774] text-[10px] font-bold uppercase tracking-wider mb-1">{titulo}</p>
       {valor !== undefined ? (
-        <h3 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tabular">{valor}</h3>
+        <h3 className="font-display text-2xl sm:text-3xl font-bold text-[#111111] dark:text-white tabular">{valor}</h3>
       ) : children}
     </div>
   );
@@ -65,15 +65,15 @@ function PeriodoSelector({ valor, onChange }) {
     { id: "mes",    label: "Este mes" },
   ];
   return (
-    <div className="inline-flex bg-slate-100 dark:bg-slate-800/50 rounded-lg p-1">
+    <div className="inline-flex bg-[#F7F6F3] dark:bg-slate-800/50 rounded-lg p-1">
       {opciones.map((o) => (
         <button
           key={o.id}
           onClick={() => onChange(o.id)}
           className={`px-3 sm:px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
             valor === o.id
-              ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm"
-              : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-none"
+              : "text-[#787774] hover:text-[#2F3437] dark:hover:text-slate-300"
           }`}
         >
           {o.label}
@@ -150,7 +150,7 @@ export default function AgendaPage() {
 
       {/* ===== STATS POR PERIODO ===== */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white">
+        <h2 className="font-display text-xl font-bold text-[#111111] dark:text-white">
           Resumen financiero
         </h2>
         <PeriodoSelector valor={periodoStats} onChange={setPeriodoStats} />
@@ -164,11 +164,11 @@ export default function AgendaPage() {
           <StatCard titulo="Por barbero">
             <div className="max-h-24 overflow-y-auto custom-scrollbar mt-1">
               {Object.entries(finanzas.desglose_barberos || {}).length === 0 ? (
-                <p className="text-xs text-slate-400 italic">Sin movimientos en este periodo</p>
+                <p className="text-xs text-[#A8A29E] italic">Sin movimientos en este periodo</p>
               ) : (
                 Object.entries(finanzas.desglose_barberos || {}).map(([n, t]) => (
                   <div key={n} className="flex justify-between text-xs mb-1.5">
-                    <span className="text-slate-600 dark:text-slate-300 truncate mr-2">{n}</span>
+                    <span className="text-[#2F3437] dark:text-slate-300 truncate mr-2">{n}</span>
                     <span className="text-emerald-600 dark:text-emerald-400 font-bold tabular shrink-0">
                       ${t.toLocaleString("es-CL")}
                     </span>
@@ -181,9 +181,9 @@ export default function AgendaPage() {
       )}
 
       {/* ===== FILTROS ===== */}
-      <div className="bg-white dark:bg-[#0B1221] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-4 sm:p-5 shadow-sm mb-6">
+      <div className="bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl p-4 sm:p-5 shadow-none mb-6">
         <div className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+          <h3 className="text-sm font-bold text-[#111111] dark:text-white">
             Filtros
             {hayFiltrosActivos && (
               <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold">!</span>
@@ -200,13 +200,13 @@ export default function AgendaPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {/* Búsqueda por nombre */}
           <div className="lg:col-span-2 relative">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A8A29E] pointer-events-none" />
             <input
               type="text"
               placeholder="Buscar cliente..."
               value={busqueda}
               onChange={(e) => { setBusqueda(e.target.value); setPagina(1); }}
-              className="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+              className="w-full pl-10 pr-3 py-2.5 bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-lg text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
             />
           </div>
 
@@ -215,7 +215,7 @@ export default function AgendaPage() {
             type="date"
             value={filtroDesde}
             onChange={(e) => { setFiltroDesde(e.target.value); setPagina(1); }}
-            className="px-3 py-2.5 bg-slate-50 dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all dark:[color-scheme:dark]"
+            className="px-3 py-2.5 bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-lg text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all dark:[color-scheme:dark]"
           />
 
           {/* Hasta */}
@@ -223,14 +223,14 @@ export default function AgendaPage() {
             type="date"
             value={filtroHasta}
             onChange={(e) => { setFiltroHasta(e.target.value); setPagina(1); }}
-            className="px-3 py-2.5 bg-slate-50 dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all dark:[color-scheme:dark]"
+            className="px-3 py-2.5 bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-lg text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all dark:[color-scheme:dark]"
           />
 
           {/* Barbero */}
           <select
             value={filtroBarbero}
             onChange={(e) => { setFiltroBarbero(e.target.value); setPagina(1); }}
-            className="px-3 py-2.5 bg-slate-50 dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+            className="px-3 py-2.5 bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-lg text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
           >
             <option value="">Todos los barberos</option>
             {(barberos || []).map((b) => (
@@ -242,7 +242,7 @@ export default function AgendaPage() {
           <select
             value={filtroEstado}
             onChange={(e) => { setFiltroEstado(e.target.value); setPagina(1); }}
-            className="lg:col-span-2 px-3 py-2.5 bg-slate-50 dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+            className="lg:col-span-2 px-3 py-2.5 bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-lg text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
           >
             <option value="">Todos los estados</option>
             <option value="pendiente">Pendiente</option>
@@ -254,29 +254,29 @@ export default function AgendaPage() {
       </div>
 
       {/* ===== CITAS ACTIVAS ===== */}
-      <div className="bg-white dark:bg-[#0B1221] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-sm mb-8">
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800/60">
-          <h2 className="font-display text-lg font-bold text-slate-900 dark:text-white">
+      <div className="bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl overflow-hidden shadow-none mb-8">
+        <div className="px-6 py-4 border-b border-[#EAEAEA] dark:border-slate-800/60">
+          <h2 className="font-display text-lg font-bold text-[#111111] dark:text-white">
             {hayFiltrosActivos ? "Resultados filtrados" : "Citas activas"}
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-[#787774]">
             {hayFiltrosActivos ? `${operativas.length} cita(s) activas + ${historial.length} en historial` : "Pendientes y confirmadas"}
           </p>
         </div>
 
         {cargandoCitas ? (
           <div className="p-12 flex justify-center">
-            <div className="w-8 h-8 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-[#EAEAEA] border-t-emerald-500 rounded-full animate-spin" />
           </div>
         ) : operativas.length === 0 ? (
-          <div className="p-12 text-center text-slate-500">
+          <div className="p-12 text-center text-[#787774]">
             {hayFiltrosActivos ? "No hay citas activas con esos filtros." : "No hay citas activas en esta página."}
           </div>
         ) : (
           <>
             <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 dark:bg-[#080d18] text-slate-500 font-semibold uppercase text-[10px] tracking-widest">
+                <thead className="bg-[#FBFBFA] dark:bg-[#080d18] text-[#787774] font-semibold uppercase text-[10px] tracking-widest">
                   <tr>
                     <th className="px-6 py-4">Fecha / Hora</th>
                     <th className="px-6 py-4">Cliente</th>
@@ -285,15 +285,15 @@ export default function AgendaPage() {
                     <th className="px-6 py-4 text-right">Acción</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/40">
+                <tbody className="divide-y divide-black/5 dark:divide-slate-800/40">
                   {operativas.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20">
+                    <tr key={c.id} className="hover:bg-[#F7F6F3] dark:hover:bg-slate-800/20">
                       <td className="px-6 py-4">
-                        <span className="font-bold text-slate-700 dark:text-slate-200">{c.fecha}</span>{" "}
-                        <span className="text-slate-500 ml-2 font-mono text-xs">{c.hora?.substring(0,5)}</span>
+                        <span className="font-bold text-[#2F3437] dark:text-slate-200">{c.fecha}</span>{" "}
+                        <span className="text-[#787774] ml-2 font-mono text-xs">{c.hora?.substring(0,5)}</span>
                       </td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{c.cliente?.name}</td>
-                      <td className="px-6 py-4 text-slate-500">{c.barbero?.name}</td>
+                      <td className="px-6 py-4 text-[#2F3437] dark:text-slate-300">{c.cliente?.name}</td>
+                      <td className="px-6 py-4 text-[#787774]">{c.barbero?.name}</td>
                       <td className="px-6 py-4 text-center">
                         <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${getBadgeStyle(c.estado)}`}>
                           {c.estado}
@@ -308,23 +308,23 @@ export default function AgendaPage() {
               </table>
             </div>
 
-            <div className="lg:hidden divide-y divide-slate-100 dark:divide-slate-800/40">
+            <div className="lg:hidden divide-y divide-black/5 dark:divide-slate-800/40">
               {operativas.map((c) => (
                 <div key={c.id} className="p-5">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="min-w-0">
                       <div className="flex items-baseline gap-2 mb-1">
-                        <span className="font-bold text-slate-900 dark:text-white">{c.fecha}</span>
-                        <span className="text-slate-500 font-mono text-xs tabular">{c.hora?.substring(0,5)}</span>
+                        <span className="font-bold text-[#111111] dark:text-white">{c.fecha}</span>
+                        <span className="text-[#787774] font-mono text-xs tabular">{c.hora?.substring(0,5)}</span>
                       </div>
-                      <p className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate">{c.cliente?.name}</p>
-                      <p className="text-xs text-slate-500 truncate">con {c.barbero?.name}</p>
+                      <p className="text-sm text-[#2F3437] dark:text-slate-300 font-medium truncate">{c.cliente?.name}</p>
+                      <p className="text-xs text-[#787774] truncate">con {c.barbero?.name}</p>
                     </div>
                     <span className={`shrink-0 px-2 py-1 rounded text-[10px] font-bold uppercase ${getBadgeStyle(c.estado)}`}>
                       {c.estado}
                     </span>
                   </div>
-                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800/40">
+                  <div className="pt-3 border-t border-black/5 dark:border-slate-800/40">
                     <AccionesCita cita={c} onEstado={handleEstado} disabled={cambiandoEstado} />
                   </div>
                 </div>
@@ -333,13 +333,13 @@ export default function AgendaPage() {
           </>
         )}
 
-        <div className="flex items-center justify-between bg-slate-50 dark:bg-[#080d18] px-4 sm:px-6 py-4 border-t border-slate-200 dark:border-slate-800/60">
-          <p className="text-xs text-slate-500 font-medium">
-            Página <span className="text-slate-900 dark:text-white font-bold">{paginacion.actual}</span> de {paginacion.total}
+        <div className="flex items-center justify-between bg-[#FBFBFA] dark:bg-[#080d18] px-4 sm:px-6 py-4 border-t border-[#EAEAEA] dark:border-slate-800/60">
+          <p className="text-xs text-[#787774] font-medium">
+            Página <span className="text-[#111111] dark:text-white font-bold">{paginacion.actual}</span> de {paginacion.total}
           </p>
           <div className="flex gap-2">
             <button disabled={paginacion.actual === 1} onClick={() => setPagina(paginacion.actual - 1)}
-                    className="px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg text-xs font-bold transition-colors">
+                    className="px-4 py-2 bg-[#EAEAEA] dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg text-xs font-bold transition-colors">
               ← Anterior
             </button>
             <button disabled={paginacion.actual === paginacion.total} onClick={() => setPagina(paginacion.actual + 1)}
@@ -351,24 +351,24 @@ export default function AgendaPage() {
       </div>
 
       {/* ===== HISTORIAL ===== */}
-      <div className="bg-white dark:bg-[#0B1221] border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl overflow-hidden shadow-none">
         <button onClick={() => setMostrarHistorial((v) => !v)}
-                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
+                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-[#F7F6F3] dark:hover:bg-slate-800/20 transition-colors">
           <div>
-            <h2 className="font-display text-lg font-bold text-slate-900 dark:text-white">Historial</h2>
-            <p className="text-xs text-slate-500">Finalizadas y canceladas ({historial.length})</p>
+            <h2 className="font-display text-lg font-bold text-[#111111] dark:text-white">Historial</h2>
+            <p className="text-xs text-[#787774]">Finalizadas y canceladas ({historial.length})</p>
           </div>
-          <svg className={`w-5 h-5 text-slate-400 transition-transform ${mostrarHistorial ? "rotate-180" : ""}`}
+          <svg className={`w-5 h-5 text-[#A8A29E] transition-transform ${mostrarHistorial ? "rotate-180" : ""}`}
                fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
 
         {mostrarHistorial && (
-          <div className="border-t border-slate-200 dark:border-slate-800/60">
+          <div className="border-t border-[#EAEAEA] dark:border-slate-800/60">
             <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 dark:bg-[#080d18] text-slate-500 font-semibold uppercase text-[10px] tracking-widest">
+                <thead className="bg-[#FBFBFA] dark:bg-[#080d18] text-[#787774] font-semibold uppercase text-[10px] tracking-widest">
                   <tr>
                     <th className="px-6 py-4">ID</th>
                     <th className="px-6 py-4">Fecha / Hora</th>
@@ -376,12 +376,12 @@ export default function AgendaPage() {
                     <th className="px-6 py-4 text-right">Estado</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/40">
+                <tbody className="divide-y divide-black/5 dark:divide-slate-800/40">
                   {historial.map((c) => (
                     <tr key={c.id}>
-                      <td className="px-6 py-3 text-slate-400 font-mono text-xs">#{c.id}</td>
-                      <td className="px-6 py-3 text-slate-500">{c.fecha} {c.hora?.substring(0,5)}</td>
-                      <td className="px-6 py-3 text-slate-500">{c.cliente?.name}</td>
+                      <td className="px-6 py-3 text-[#A8A29E] font-mono text-xs">#{c.id}</td>
+                      <td className="px-6 py-3 text-[#787774]">{c.fecha} {c.hora?.substring(0,5)}</td>
+                      <td className="px-6 py-3 text-[#787774]">{c.cliente?.name}</td>
                       <td className="px-6 py-3 text-right">
                         <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${getBadgeStyle(c.estado)}`}>
                           {c.estado}
@@ -393,12 +393,12 @@ export default function AgendaPage() {
               </table>
             </div>
 
-            <div className="lg:hidden divide-y divide-slate-100 dark:divide-slate-800/40">
+            <div className="lg:hidden divide-y divide-black/5 dark:divide-slate-800/40">
               {historial.map((c) => (
                 <div key={c.id} className="p-4 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{c.cliente?.name}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-sm font-medium text-[#2F3437] dark:text-slate-300 truncate">{c.cliente?.name}</p>
+                    <p className="text-xs text-[#787774] mt-0.5">
                       <span className="font-mono tabular">#{c.id}</span> · {c.fecha} {c.hora?.substring(0,5)}
                     </p>
                   </div>

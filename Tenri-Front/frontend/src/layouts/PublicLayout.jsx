@@ -74,20 +74,20 @@ export default function PublicLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] dark:bg-[#050810] text-slate-900 dark:text-slate-200 transition-colors duration-300 flex flex-col">
+    <div className="min-h-screen bg-[var(--bg)] dark:bg-[#050810] text-[#111111] dark:text-slate-200 transition-colors duration-300 flex flex-col">
 
       {/* ============ NAVBAR ============ */}
       <nav className={`
         fixed top-0 w-full z-50 transition-all duration-300
         ${scrolled
-          ? "glass border-b border-slate-200/60 dark:border-slate-800/50 shadow-sm"
+          ? "glass border-b border-[#EAEAEA]/60 dark:border-slate-800/50 shadow-none"
           : "bg-transparent border-b border-transparent"}
       `}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
 
           <Link
             to="/"
-            className="font-display text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-1 sm:gap-2 shrink-0"
+            className="font-display text-xl sm:text-2xl font-bold text-[#111111] dark:text-white tracking-tight flex items-center gap-1 sm:gap-2 shrink-0"
           >
             Tenri<span className="italic font-normal text-emerald-500">·</span>
             <span className="text-emerald-500 dark:text-emerald-400">Booking</span>
@@ -98,7 +98,7 @@ export default function PublicLayout() {
             <button
               onClick={toggleTema}
               aria-label={esOscuro ? "Activar modo claro" : "Activar modo oscuro"}
-              className="w-10 h-10 sm:w-auto sm:h-auto sm:p-2.5 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800/50 transition-colors"
+              className="w-10 h-10 sm:w-auto sm:h-auto sm:p-2.5 rounded-full flex items-center justify-center text-[#2F3437] hover:bg-[#F7F6F3] dark:text-slate-400 dark:hover:bg-slate-800/50 transition-colors"
             >
               {esOscuro ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
             </button>
@@ -107,11 +107,11 @@ export default function PublicLayout() {
               <>
                 {/* Saludo solo desktop */}
                 <div className="hidden md:flex items-center gap-2 text-sm">
-                  <span className="text-slate-500 dark:text-slate-400">Hola,</span>
+                  <span className="text-[#787774] dark:text-slate-400">Hola,</span>
                   {/* 🔧 FIX #12 (PDF): nombre largo no rompe navbar.
                       inline-block necesario para que max-w + truncate funcionen
                       (los <span> inline ignoran max-width). */}
-                  <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[160px] inline-block">
+                  <span className="font-semibold text-[#111111] dark:text-white truncate max-w-[160px] inline-block">
                     {usuario.name?.split(" ")[0]}
                   </span>
                 </div>
@@ -121,7 +121,7 @@ export default function PublicLayout() {
                 <button
                   onClick={handleLogout}
                   aria-label="Cerrar sesión"
-                  className="w-10 h-10 sm:w-auto sm:h-auto sm:p-2.5 rounded-full flex items-center justify-center text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                  className="w-10 h-10 sm:w-auto sm:h-auto sm:p-2.5 rounded-full flex items-center justify-center text-[#787774] hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
                 >
                   <LogOutIcon className="w-4 h-4" />
                 </button>
@@ -129,7 +129,7 @@ export default function PublicLayout() {
             ) : (
               <button
                 onClick={() => setMostrarLogin(true)}
-                className="px-4 sm:px-5 py-2 sm:py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-[#03070e] text-xs sm:text-sm font-bold rounded-full transition-all shadow-sm hover:shadow-lg hover:shadow-emerald-500/20 whitespace-nowrap"
+                className="px-4 sm:px-5 py-2 sm:py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-[#03070e] text-xs sm:text-sm font-bold rounded-full transition-all shadow-none hover:shadow-[0_4px_16px_rgba(0,0,0,0.05)] hover:shadow-emerald-500/20 whitespace-nowrap"
               >
                 Iniciar sesión
               </button>
@@ -144,21 +144,21 @@ export default function PublicLayout() {
       </div>
 
       {/* ============ FOOTER ============ */}
-      <footer className="border-t border-slate-200 dark:border-slate-800/50 bg-white/50 dark:bg-[#03070e]/50 backdrop-blur-sm transition-colors">
+      <footer className="border-t border-[#EAEAEA] dark:border-slate-800/50 bg-white/50 dark:bg-[#03070e]/50 backdrop-blur-sm transition-colors">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
 
             <div>
-              <Link to="/" className="font-display text-3xl font-bold text-slate-900 dark:text-white tracking-tight inline-block mb-3">
+              <Link to="/" className="font-display text-3xl font-bold text-[#111111] dark:text-white tracking-tight inline-block mb-3">
                 Tenri<span className="italic font-normal text-emerald-500">·</span>
                 <span className="text-emerald-500 dark:text-emerald-400">Booking</span>
               </Link>
-              <p className="text-sm text-slate-500 dark:text-slate-500 max-w-md">
+              <p className="text-sm text-[#787774] dark:text-slate-500 max-w-md">
                 Reservas premium para barberías y centros de estética. Encuentra tu próximo barbero ideal.
               </p>
             </div>
 
-            <div className="text-sm text-slate-500 dark:text-slate-500 text-left md:text-right">
+            <div className="text-sm text-[#787774] dark:text-slate-500 text-left md:text-right">
               <p>© {new Date().getFullYear()} Tenri SPA</p>
               <p className="mt-1 text-xs">Hecho con cariño en Chile 🇨🇱</p>
             </div>

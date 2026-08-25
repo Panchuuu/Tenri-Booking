@@ -26,6 +26,7 @@ import ServiciosPage     from "./pages/admin/ServiciosPage";
 import EquipoPage        from "./pages/admin/EquipoPage";
 import BloqueosPage      from "./pages/admin/BloqueosPage"; // 🆕 Fase 4A
 import ConfiguracionPage from "./pages/admin/ConfiguracionPage";
+import MiTiendaPage      from "./pages/admin/MiTiendaPage";
 import PerfilPage        from "./pages/admin/PerfilPage";
 
 export default function App() {
@@ -71,6 +72,7 @@ export default function App() {
                 <Route path="servicios"       element={<ServiciosPage />} />
                 <Route path="equipo"          element={<EquipoPage />} />
                 <Route path="bloqueos"        element={<BloqueosPage />} /> {/* 🆕 Fase 4A */}
+                <Route path="tienda"          element={<MiTiendaPage />} /> {/* 🏪 Perfil público */}
                 <Route path="configuracion"   element={<ConfiguracionPage />} />
                 <Route path="perfil"          element={<PerfilPage />} />
               </Route>

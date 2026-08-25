@@ -63,7 +63,7 @@ export default function EditarBarberiaModal({ barberia, onClose, onGuardado }) {
     }
   };
 
-  const inputClass = "w-full bg-slate-50 dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm text-slate-900 dark:text-slate-200 outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/10 transition-all";
+  const inputClass = "w-full bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-3 text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/10 transition-all";
 
   return (
     <div
@@ -71,17 +71,17 @@ export default function EditarBarberiaModal({ barberia, onClose, onGuardado }) {
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-[#0B1221] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-scale-in"
+        className="bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+          <h3 className="text-lg font-bold text-[#111111] dark:text-white">
             Editar barbería
           </h3>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-lg text-[#A8A29E] hover:text-[#2F3437] hover:bg-[#F7F6F3] dark:hover:bg-slate-800 transition-colors"
           >
             ✕
           </button>
@@ -100,7 +100,7 @@ export default function EditarBarberiaModal({ barberia, onClose, onGuardado }) {
           {/* Nombre */}
           <div>
             <div className="flex items-baseline justify-between mb-2">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-[#787774] uppercase tracking-wider">
                 Nombre comercial
               </label>
               <CharacterCounter actual={form.nombre.length} max={60} />
@@ -119,7 +119,7 @@ export default function EditarBarberiaModal({ barberia, onClose, onGuardado }) {
 
           {/* Color */}
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">
+            <label className="text-xs font-semibold text-[#787774] uppercase tracking-wider block mb-2">
               Color de marca
             </label>
             <div className="flex items-center gap-3">
@@ -127,7 +127,7 @@ export default function EditarBarberiaModal({ barberia, onClose, onGuardado }) {
                 type="color"
                 value={form.color_principal}
                 onChange={(e) => setForm(prev => ({ ...prev, color_principal: e.target.value }))}
-                className="w-10 h-10 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer bg-transparent"
+                className="w-10 h-10 rounded-lg border border-[#EAEAEA] dark:border-slate-700 cursor-pointer bg-transparent"
               />
               <input
                 type="text"
@@ -145,7 +145,7 @@ export default function EditarBarberiaModal({ barberia, onClose, onGuardado }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              className="px-5 py-2.5 text-sm font-semibold text-[#2F3437] dark:text-slate-400 hover:bg-[#F7F6F3] dark:hover:bg-slate-800 rounded-lg transition-colors"
             >
               Cancelar
             </button>

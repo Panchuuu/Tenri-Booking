@@ -83,7 +83,7 @@ export default function Login({ onClose, onLoginSuccess }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 dark:bg-[#03070e]/80 backdrop-blur-md p-4 animate-fade-in">
       <div
-        className="bg-white dark:bg-[#0B1221] border border-slate-200 dark:border-slate-800/60 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden relative animate-scale-in"
+        className="bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl shadow-2xl w-full max-w-md overflow-hidden relative animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-emerald-400/20 dark:bg-emerald-600/15 rounded-full blur-[80px] pointer-events-none" />
@@ -92,17 +92,17 @@ export default function Login({ onClose, onLoginSuccess }) {
         <div className="relative z-10">
           <div className="px-8 pt-8 pb-2 flex justify-between items-start">
             <div>
-              <h2 className="font-display text-3xl font-bold text-slate-900 dark:text-white leading-tight">
+              <h2 className="font-display text-3xl font-bold text-[#111111] dark:text-white leading-tight">
                 {esRegistro ? "Crear cuenta" : "Bienvenido"}
               </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+              <p className="text-sm text-[#787774] dark:text-slate-400 mt-2">
                 {esRegistro ? "Únete a la red Tenri" : "Ingresa para continuar"}
               </p>
             </div>
             <button
               onClick={onClose}
               aria-label="Cerrar"
-              className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-full transition-colors -mt-1 -mr-1"
+              className="p-2 text-[#A8A29E] hover:text-[#2F3437] dark:hover:text-rose-400 hover:bg-[#F7F6F3] dark:hover:bg-slate-800/50 rounded-full transition-colors -mt-1 -mr-1"
             >
               <XIcon />
             </button>
@@ -112,7 +112,7 @@ export default function Login({ onClose, onLoginSuccess }) {
             <form onSubmit={handleSubmit} className="space-y-5">
               {esRegistro && (
                 <div className="animate-fade-in-down">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">
+                  <label className="text-xs font-bold text-[#787774] uppercase tracking-widest mb-2 block">
                     Nombre completo
                   </label>
                   <input
@@ -120,13 +120,13 @@ export default function Login({ onClose, onLoginSuccess }) {
                     maxLength={80}
                     onChange={(e) => setNombre(e.target.value)}
                     placeholder="Nicolás Cisternas"
-                    className="w-full bg-slate-50 dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    className="w-full bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-3.5 text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   />
                 </div>
               )}
 
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">
+                <label className="text-xs font-bold text-[#787774] uppercase tracking-widest mb-2 block">
                   Correo electrónico
                 </label>
                 <input
@@ -135,10 +135,10 @@ export default function Login({ onClose, onLoginSuccess }) {
                   onChange={(e) => setEmail(e.target.value)}
                   onBlur={() => setEmailTocado(true)}
                   placeholder="tu@correo.com"
-                  className={`w-full bg-slate-50 dark:bg-[#03070e] border rounded-xl p-3.5 text-sm text-slate-900 dark:text-slate-200 outline-none transition-all ${
+                  className={`w-full bg-[#FBFBFA] dark:bg-[#03070e] border rounded-xl p-3.5 text-sm text-[#111111] dark:text-slate-200 outline-none transition-all ${
                     mostrarErrorEmail
                       ? "border-rose-400 dark:border-rose-500/60 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20"
-                      : "border-slate-200 dark:border-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                      : "border-[#EAEAEA] dark:border-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                   }`}
                 />
                 {mostrarErrorEmail && (
@@ -149,7 +149,7 @@ export default function Login({ onClose, onLoginSuccess }) {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">
+                <label className="text-xs font-bold text-[#787774] uppercase tracking-widest mb-2 block">
                   Contraseña
                 </label>
                 <input
@@ -157,18 +157,18 @@ export default function Login({ onClose, onLoginSuccess }) {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   minLength={esRegistro ? 8 : 1}
-                  className="w-full bg-slate-50 dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                  className="w-full bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-3.5 text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                 />
-                {esRegistro && <p className="text-[11px] text-slate-500 mt-1.5">Mínimo 8 caracteres, con letras y números.</p>}
+                {esRegistro && <p className="text-[11px] text-[#787774] mt-1.5">Mínimo 8 caracteres, con letras y números.</p>}
               </div>
 
               <button
                 type="submit"
                 disabled={cargando || mostrarErrorEmail}
-                className={`w-full py-3.5 rounded-xl font-bold text-white dark:text-[#03070e] transition-all shadow-md flex items-center justify-center gap-2 ${
+                className={`w-full py-3.5 rounded-xl font-bold text-white dark:text-[#03070e] transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex items-center justify-center gap-2 ${
                   cargando || mostrarErrorEmail
                     ? "bg-slate-300 dark:bg-slate-700 cursor-not-allowed"
-                    : "bg-slate-900 dark:bg-emerald-500 hover:bg-emerald-500 dark:hover:bg-emerald-400 hover:shadow-lg hover:shadow-emerald-500/25 hover:-translate-y-0.5"
+                    : "bg-slate-900 dark:bg-emerald-500 hover:bg-emerald-500 dark:hover:bg-emerald-400 hover:shadow-[0_4px_16px_rgba(0,0,0,0.05)] hover:shadow-emerald-500/25 hover:-translate-y-0.5"
                 }`}
               >
                 {cargando ? (
@@ -182,7 +182,7 @@ export default function Login({ onClose, onLoginSuccess }) {
               </button>
             </form>
 
-            <div className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
+            <div className="mt-6 text-center text-sm text-[#787774] dark:text-slate-400">
               {esRegistro ? "¿Ya tienes cuenta?" : "¿No tienes cuenta?"}{" "}
               <button
                 type="button"

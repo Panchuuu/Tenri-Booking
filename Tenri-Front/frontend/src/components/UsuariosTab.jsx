@@ -17,7 +17,7 @@ const BADGE_ROL = {
   superadmin: "bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400",
   admin:      "bg-amber-100  dark:bg-amber-500/10  text-amber-700  dark:text-amber-400",
   barbero:    "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-  cliente:    "bg-slate-100  dark:bg-slate-500/10  text-slate-700  dark:text-slate-400",
+  cliente:    "bg-[#F7F6F3]  dark:bg-slate-500/10  text-[#2F3437]  dark:text-slate-400",
 };
 
 export default function UsuariosTab({ usuarios = [], cargando, onRefetch }) {
@@ -83,7 +83,7 @@ export default function UsuariosTab({ usuarios = [], cargando, onRefetch }) {
     return (
       <div className="space-y-3 mt-4">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-14 rounded-xl bg-slate-100 dark:bg-slate-800/50 animate-pulse" />
+          <div key={i} className="h-14 rounded-xl bg-[#F7F6F3] dark:bg-slate-800/50 animate-pulse" />
         ))}
       </div>
     );
@@ -99,12 +99,12 @@ export default function UsuariosTab({ usuarios = [], cargando, onRefetch }) {
           value={buscar}
           onChange={(e) => setBuscar(e.target.value)}
           placeholder="Buscar por nombre o email..."
-          className="flex-1 bg-white dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500/50 transition-colors"
+          className="flex-1 bg-white dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500/50 transition-colors"
         />
         <select
           value={filtroRol}
           onChange={(e) => setFiltroRol(e.target.value)}
-          className="bg-white dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500/50 transition-colors"
+          className="bg-white dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500/50 transition-colors"
         >
           <option value="">Todos los roles</option>
           {ROLES.map((r) => (
@@ -114,14 +114,14 @@ export default function UsuariosTab({ usuarios = [], cargando, onRefetch }) {
       </div>
 
       {/* ── Contador ── */}
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-[#A8A29E]">
         {usuariosFiltrados.length} usuario{usuariosFiltrados.length !== 1 ? "s" : ""}
         {buscar || filtroRol ? " (filtrados)" : " en total"}
       </p>
 
       {/* ── Lista ── */}
       {usuariosFiltrados.length === 0 ? (
-        <div className="text-center py-12 text-slate-400 text-sm">
+        <div className="text-center py-12 text-[#A8A29E] text-sm">
           No se encontraron usuarios con ese criterio.
         </div>
       ) : (
@@ -129,10 +129,10 @@ export default function UsuariosTab({ usuarios = [], cargando, onRefetch }) {
           {usuariosFiltrados.map((u) => (
             <div
               key={u.id}
-              className={`bg-white dark:bg-[#0B1221] border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 transition-all ${
+              className={`bg-white dark:bg-[#0B1221] border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 transition-all ${
                 u.suspendido
                   ? "border-rose-200 dark:border-rose-500/20 opacity-60"
-                  : "border-slate-200 dark:border-slate-800/60"
+                  : "border-[#EAEAEA] dark:border-slate-800/60"
               }`}
             >
               {/* Avatar */}
@@ -146,10 +146,10 @@ export default function UsuariosTab({ usuarios = [], cargando, onRefetch }) {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-slate-900 dark:text-white text-sm truncate">{u.name}</p>
-                <p className="text-xs text-slate-400 truncate">{u.email}</p>
+                <p className="font-semibold text-[#111111] dark:text-white text-sm truncate">{u.name}</p>
+                <p className="text-xs text-[#A8A29E] truncate">{u.email}</p>
                 {u.barberia && (
-                  <p className="text-xs text-slate-400 truncate">📍 {u.barberia.nombre}</p>
+                  <p className="text-xs text-[#A8A29E] truncate">📍 {u.barberia.nombre}</p>
                 )}
               </div>
 
@@ -166,7 +166,7 @@ export default function UsuariosTab({ usuarios = [], cargando, onRefetch }) {
                   value={u.rol}
                   onChange={(e) => handleCambiarRol(u.id, e.target.value)}
                   disabled={ejecutando}
-                  className="text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 outline-none disabled:opacity-50"
+                  className="text-xs bg-[#FBFBFA] dark:bg-slate-800 border border-[#EAEAEA] dark:border-slate-700 rounded-lg px-2 py-1.5 outline-none disabled:opacity-50"
                 >
                   {ROLES.map((r) => (
                     <option key={r} value={r}>{r}</option>

@@ -65,7 +65,10 @@ export default function useApi(endpoint, opciones = {}) {
 
       if (!resp.ok) {
         const errJson = await resp.json().catch(() => ({}));
-        throw new Error(errJson.message || errJson.error || `Error HTTP ${resp.status}`);
+        const err = new Error(errJson.message || errJson.error || `Error HTTP ${resp.status}`);
+        // Los consumidores pueden distinguir 404 de errores transitorios
+        err.status = resp.status;
+        throw err;
       }
 
       const json = await resp.json();
@@ -85,6 +88,13 @@ export default function useApi(endpoint, opciones = {}) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endpoint, method, skip, ...deps]);
+
+  // Si cambia el endpoint (ej: navegar entre /barberia/:slug distintos con el
+  // componente montado), limpiamos la data anterior: sin esto, un 404 del
+  // nuevo endpoint dejaría renderizada la data del endpoint anterior.
+  useEffect(() => {
+    setData(null);
+  }, [endpoint]);
 
   useEffect(() => {
     ejecutar();

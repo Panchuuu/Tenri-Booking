@@ -35,7 +35,7 @@ export default function ConfirmModal({
       onClick={cargando ? undefined : onCancelar}
     >
       <div
-        className="bg-white dark:bg-[#0B1221] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+        className="bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-4 mb-4">
@@ -45,23 +45,23 @@ export default function ConfirmModal({
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{titulo}</h3>
+          <h3 className="text-lg font-bold text-[#111111] dark:text-white">{titulo}</h3>
         </div>
 
-        <p className="text-sm text-slate-600 dark:text-slate-400 mb-8 pl-14">{mensaje}</p>
+        <p className="text-sm text-[#2F3437] dark:text-slate-400 mb-8 pl-14">{mensaje}</p>
 
         <div className="flex gap-3 justify-end">
           <button
             onClick={onCancelar}
             disabled={cargando}
-            className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent rounded-lg transition-colors"
+            className="px-5 py-2.5 text-sm font-semibold text-[#2F3437] dark:text-slate-400 hover:text-[#111111] dark:hover:text-white hover:bg-[#F7F6F3] dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent rounded-lg transition-colors"
           >
             {textoCancelar}
           </button>
           <button
             onClick={onConfirmar}
             disabled={cargando}
-            className={`px-5 py-2.5 font-bold rounded-lg transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 ${colorConfirmar}`}
+            className={`px-5 py-2.5 font-bold rounded-lg transition-colors shadow-none disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 ${colorConfirmar}`}
           >
             {cargando ? (
               <>

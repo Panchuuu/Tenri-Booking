@@ -32,8 +32,8 @@ export default class ErrorBoundary extends React.Component {
     if (!this.state.hayError) return this.props.children;
 
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#060b14] p-6">
-        <div className="max-w-md w-full bg-white dark:bg-[#0B1221] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-8 text-center shadow-xl">
+      <div className="min-h-screen flex items-center justify-center bg-[#FBFBFA] dark:bg-[#060b14] p-6">
+        <div className="max-w-md w-full bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl p-8 text-center shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
           <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-500/10 flex items-center justify-center mx-auto mb-6">
             <svg className="w-8 h-8 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
@@ -41,15 +41,15 @@ export default class ErrorBoundary extends React.Component {
             </svg>
           </div>
 
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+          <h1 className="text-2xl font-bold text-[#111111] dark:text-white mb-2">
             Algo salió mal
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
+          <p className="text-[#2F3437] dark:text-slate-400 mb-6">
             Ocurrió un error inesperado. Por favor, recarga la página.
           </p>
 
           {import.meta.env.DEV && this.state.error && (
-            <pre className="text-left text-xs bg-slate-100 dark:bg-[#03070e] p-4 rounded-lg mb-6 overflow-auto max-h-40 text-rose-600 dark:text-rose-400">
+            <pre className="text-left text-xs bg-[#F7F6F3] dark:bg-[#03070e] p-4 rounded-lg mb-6 overflow-auto max-h-40 text-rose-600 dark:text-rose-400">
               {this.state.error.message}
             </pre>
           )}

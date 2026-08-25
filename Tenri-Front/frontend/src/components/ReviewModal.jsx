@@ -42,11 +42,11 @@ export default function ReviewModal({ cita, onClose, onReviewSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white dark:bg-[#0B1221] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-        <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 text-center">
+      <div className="bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <h2 className="text-2xl font-bold text-[#111111] dark:text-white mb-2 text-center">
           Califica tu servicio
         </h2>
-        <p className="text-slate-500 dark:text-slate-400 text-center text-sm mb-6">
+        <p className="text-[#787774] dark:text-slate-400 text-center text-sm mb-6">
           ¿Qué tal te pareció tu corte con <strong>{cita.barbero?.name || "tu barbero"}</strong>?
         </p>
 
@@ -82,13 +82,13 @@ export default function ReviewModal({ cita, onClose, onReviewSuccess }) {
 
           {/* CAJA DE COMENTARIOS */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-[#2F3437] dark:text-slate-300 mb-1">
               Comentario (Opcional)
             </label>
             <textarea
               rows="3"
               placeholder="Ej: Excelente servicio, muy puntual..."
-              className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none resize-none text-slate-900 dark:text-white"
+              className="w-full px-4 py-3 rounded-xl bg-[#FBFBFA] dark:bg-slate-900 border border-[#EAEAEA] dark:border-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none resize-none text-[#111111] dark:text-white"
               value={comentario}
               onChange={(e) => setComentario(e.target.value)}
               maxLength={500}
@@ -99,7 +99,7 @@ export default function ReviewModal({ cita, onClose, onReviewSuccess }) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition-colors"
+              className="flex-1 py-3 px-4 bg-[#F7F6F3] hover:bg-[#EAEAEA] dark:bg-slate-800 dark:hover:bg-slate-700 text-[#2F3437] dark:text-slate-300 rounded-xl font-bold transition-colors"
             >
               Cancelar
             </button>

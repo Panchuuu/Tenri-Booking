@@ -121,15 +121,15 @@ export default function EquipoPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
         {/* FORMULARIO */}
-        <div className="lg:col-span-5 bg-white dark:bg-[#0B1221] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-6 h-fit shadow-sm">
-          <h3 className="font-display text-lg font-bold text-slate-900 dark:text-white mb-6">
+        <div className="lg:col-span-5 bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl p-6 h-fit shadow-none">
+          <h3 className="font-display text-lg font-bold text-[#111111] dark:text-white mb-6">
             {editandoId ? "Editar barbero" : "Nuevo barbero"}
           </h3>
 
           {/* Avatar preview cuando editas */}
           {editandoId && barberoEditando && (
             <div className="flex justify-center mb-5">
-              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-emerald-100 dark:border-emerald-500/20 shadow-md">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-emerald-100 dark:border-emerald-500/20 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                 {barberoEditando.avatar_url ? (
                   <img src={barberoEditando.avatar_url} alt={barberoEditando.name} className="w-full h-full object-cover" />
                 ) : (
@@ -145,12 +145,12 @@ export default function EquipoPage() {
             {editandoId && (
               <div>
                 <div className="flex items-baseline justify-between mb-2">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Nombre</label>
+                  <label className="text-xs font-semibold text-[#787774] uppercase tracking-wider block">Nombre</label>
                   <CharacterCounter actual={form.nombre.length} max={80} />
                 </div>
                 <input type="text" value={form.nombre}
                        onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                       className="w-full bg-slate-50 dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                       className="w-full bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-3 text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                        required
                        maxLength={80}
                        minLength={2} />
@@ -158,15 +158,15 @@ export default function EquipoPage() {
             )}
 
             <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Correo</label>
+              <label className="text-xs font-semibold text-[#787774] uppercase tracking-wider mb-2 block">Correo</label>
               <input type="email" value={form.email}
                      onChange={(e) => setForm({ ...form, email: e.target.value })}
                      disabled={editandoId !== null}
-                     className={`w-full bg-slate-50 dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all ${editandoId ? "opacity-50 cursor-not-allowed" : ""}`}
+                     className={`w-full bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-3 text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all ${editandoId ? "opacity-50 cursor-not-allowed" : ""}`}
                      required
                      maxLength={120} />
               {!editandoId && (
-                <p className="text-[11px] text-slate-500 mt-1.5">
+                <p className="text-[11px] text-[#787774] mt-1.5">
                   El usuario debe estar registrado previamente.
                 </p>
               )}
@@ -177,19 +177,19 @@ export default function EquipoPage() {
               <>
                 <div>
                   <div className="flex items-baseline justify-between mb-2">
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Especialidad</label>
+                    <label className="text-xs font-semibold text-[#787774] uppercase tracking-wider block">Especialidad</label>
                     <CharacterCounter actual={form.especialidad.length} max={100} />
                   </div>
                   <input type="text" value={form.especialidad}
                          onChange={(e) => setForm({ ...form, especialidad: e.target.value })}
                          placeholder="Ej: Cortes clásicos · Fade · Barba"
                          maxLength={100}
-                         className="w-full bg-slate-50 dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all" />
+                         className="w-full bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-3 text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all" />
                 </div>
 
                 <div>
                   <div className="flex items-baseline justify-between mb-2">
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Biografía</label>
+                    <label className="text-xs font-semibold text-[#787774] uppercase tracking-wider block">Biografía</label>
                     {/* 🎯 Pack 2/D: reemplaza contador manual sin colores
                         por CharacterCounter (amarillo 80%, rojo 100%). */}
                     <CharacterCounter actual={form.bio.length} max={500} />
@@ -198,7 +198,7 @@ export default function EquipoPage() {
                             onChange={(e) => setForm({ ...form, bio: e.target.value })}
                             placeholder="Cuéntale a tus clientes sobre este barbero..."
                             maxLength={500}
-                            className="w-full bg-slate-50 dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all h-24 resize-none" />
+                            className="w-full bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-3 text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all h-24 resize-none" />
                 </div>
 
                 <ImageUploader
@@ -212,30 +212,30 @@ export default function EquipoPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Entrada</label>
+                <label className="text-xs font-semibold text-[#787774] uppercase tracking-wider mb-2 block">Entrada</label>
                 <input type="time" value={form.horaInicio}
                        onChange={(e) => setForm({ ...form, horaInicio: e.target.value })}
-                       className="w-full bg-slate-50 dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                       className="w-full bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-3 text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                        required />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Salida</label>
+                <label className="text-xs font-semibold text-[#787774] uppercase tracking-wider mb-2 block">Salida</label>
                 <input type="time" value={form.horaFin}
                        onChange={(e) => setForm({ ...form, horaFin: e.target.value })}
-                       className="w-full bg-slate-50 dark:bg-[#03070e] border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm text-slate-900 dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                       className="w-full bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-3 text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                        required />
               </div>
             </div>
 
             <button type="submit" disabled={guardando}
-                    className="w-full bg-slate-900 dark:bg-emerald-500 hover:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-[#03070e] font-bold py-3 rounded-xl transition-all shadow-sm hover:shadow-lg hover:shadow-emerald-500/20 disabled:opacity-50">
+                    className="w-full bg-slate-900 dark:bg-emerald-500 hover:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-[#03070e] font-bold py-3 rounded-xl transition-all shadow-none hover:shadow-[0_4px_16px_rgba(0,0,0,0.05)] hover:shadow-emerald-500/20 disabled:opacity-50">
               {guardando ? "Guardando..." : editandoId ? "Guardar cambios" : "Asignar rol"}
             </button>
 
             {editandoId && (
               <button type="button"
                       onClick={() => { setEditandoId(null); setForm(FORM_VACIO); }}
-                      className="w-full text-slate-500 text-xs hover:text-slate-700 dark:hover:text-slate-300">
+                      className="w-full text-[#787774] text-xs hover:text-[#2F3437] dark:hover:text-slate-300">
                 Cancelar edición
               </button>
             )}
@@ -243,22 +243,22 @@ export default function EquipoPage() {
         </div>
 
         {/* LISTA */}
-        <div className="lg:col-span-7 bg-white dark:bg-[#0B1221] border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden">
+        <div className="lg:col-span-7 bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl shadow-none overflow-hidden">
           {cargando ? (
             <div className="p-12 flex justify-center">
-              <div className="w-8 h-8 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin" />
+              <div className="w-8 h-8 border-4 border-[#EAEAEA] border-t-emerald-500 rounded-full animate-spin" />
             </div>
           ) : (barberos || []).length === 0 ? (
-            <div className="p-12 text-center text-slate-500">
+            <div className="p-12 text-center text-[#787774]">
               Aún no tienes barberos en tu equipo.
             </div>
           ) : (
-            <div className="divide-y divide-slate-100 dark:divide-slate-800/40">
+            <div className="divide-y divide-black/5 dark:divide-slate-800/40">
               {barberos.map((b) => (
-                <div key={b.id} className="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
+                <div key={b.id} className="p-5 hover:bg-[#F7F6F3] dark:hover:bg-slate-800/20 transition-colors">
                   <div className="flex items-start gap-4">
                     {/* Avatar */}
-                    <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-slate-200 dark:border-slate-700 shrink-0">
+                    <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#EAEAEA] dark:border-slate-700 shrink-0">
                       {b.avatar_url ? (
                         <img src={b.avatar_url} alt={b.name} className="w-full h-full object-cover" />
                       ) : (
@@ -271,9 +271,9 @@ export default function EquipoPage() {
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline gap-2">
-                        <p className="text-slate-900 dark:text-slate-200 font-bold truncate">{b.name}</p>
+                        <p className="text-[#111111] dark:text-slate-200 font-bold truncate">{b.name}</p>
                       </div>
-                      <p className="text-xs text-slate-500 truncate">{b.email}</p>
+                      <p className="text-xs text-[#787774] truncate">{b.email}</p>
 
                       {b.especialidad && (
                         <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wider mt-1">
@@ -289,7 +289,7 @@ export default function EquipoPage() {
                       </div>
 
                       {b.bio && (
-                        <p className="text-xs text-slate-500 leading-relaxed mt-2 line-clamp-2">
+                        <p className="text-xs text-[#787774] leading-relaxed mt-2 line-clamp-2">
                           {b.bio}
                         </p>
                       )}

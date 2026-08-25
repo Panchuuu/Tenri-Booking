@@ -36,7 +36,7 @@ export default function CharacterCounter({ actual = 0, max, className = "" }) {
 
   const ratio = actual / max;
 
-  let colorClass = "text-slate-400 dark:text-slate-500";
+  let colorClass = "text-[#A8A29E] dark:text-slate-500";
   if (ratio >= 1) {
     colorClass = "text-rose-500 font-bold";
   } else if (ratio >= 0.8) {

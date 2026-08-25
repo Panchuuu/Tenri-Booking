@@ -2,7 +2,7 @@
    🎨 TENRI BARBER — SISTEMA DE DISEÑO (Fase 3)
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @import "tailwindcss";
 
@@ -12,11 +12,10 @@
    🎯 DESIGN TOKENS
    ============================================================ */
 :root {
-  /* Typography — Fraunces (display serif) + DM Sans (body), importadas arriba.
-     Antes apuntaban a "Inter", que nunca se importó: toda la app caía a la
-     fuente del sistema y las fuentes cargadas quedaban sin uso. */
-  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
-  --font-body:    "DM Sans", system-ui, -apple-system, sans-serif;
+  /* Typography — Facelift Light: Plus Jakarta Sans para UI y titulares
+     (dígitos anchos, escaneo rápido) + JetBrains Mono para horas/precios. */
+  --font-display: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-body:    "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   /* Brand */
@@ -27,13 +26,13 @@
   --brand-600: #059669;
   --brand-700: #047857;
 
-  /* Surfaces — light mode */
-  --bg:        #fafaf7;     /* warm off-white (no más blanco frío) */
-  --bg-soft:   #f4f3ed;
+  /* Surfaces — light mode (GUIA-ESTILOS-LIGHT) */
+  --bg:        #F7F6F3;     /* hueso cálido */
+  --bg-soft:   #FBFBFA;
   --surface:   #ffffff;
-  --surface-2: #faf9f4;
-  --border:    rgba(15, 23, 42, 0.08);
-  --border-strong: rgba(15, 23, 42, 0.14);
+  --surface-2: #FBFBFA;
+  --border:    #EAEAEA;
+  --border-strong: rgba(0, 0, 0, 0.12);
 
   /* Surfaces — dark mode */
   --bg-dark:        #050810;
@@ -42,11 +41,11 @@
   --surface-2-dark: #0e1729;
   --border-dark:    rgba(255, 255, 255, 0.06);
 
-  /* Effects */
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.06);
-  --shadow-glow: 0 0 40px rgba(16, 185, 129, 0.15);
+  /* Effects — sombras casi inexistentes (solo hover, ultra difusas) */
+  --shadow-sm: none;
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.05);
+  --shadow-glow: 0 0 40px rgba(16, 185, 129, 0.10);
 
   /* Easing */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -58,7 +57,6 @@
    ============================================================ */
 html, body {
   font-family: var(--font-body);
-  font-feature-settings: "ss01", "cv11"; /* DM Sans variants */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -68,12 +66,10 @@ html, body {
 /* .dark vive en <html>, así que html necesita el selector directo */
 html.dark, html.dark body { background-color: var(--bg-dark); }
 
-/* Display headings — serif distintivo */
+/* Display headings — mismo sans, jerarquía por peso y tracking */
 h1, h2, h3, .font-display {
   font-family: var(--font-display);
-  font-optical-sizing: auto;
   letter-spacing: -0.02em;
-  font-feature-settings: "ss01";
 }
 
 /* Tabular nums para precios y horarios */
@@ -129,6 +125,23 @@ h1, h2, h3, .font-display {
   0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
   50%      { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
 }
+
+/* ── Viñeta de reserva del hero: un horario se "selecciona" y
+   aparece la confirmación, en un bucle de 6 s ── */
+@keyframes booking-slot-pick {
+  0%, 16%   { background: #ffffff; color: #2F3437; border-color: #EAEAEA; transform: scale(1); }
+  22%, 80%  { background: #10b981; color: #ffffff; border-color: #10b981; transform: scale(1.06); }
+  88%, 100% { background: #ffffff; color: #2F3437; border-color: #EAEAEA; transform: scale(1); }
+}
+
+@keyframes booking-confirm-pop {
+  0%, 28%   { opacity: 0; transform: translateY(10px); }
+  36%, 80%  { opacity: 1; transform: translateY(0); }
+  90%, 100% { opacity: 0; transform: translateY(10px); }
+}
+
+.anim-slot-pick   { animation: booking-slot-pick   6s var(--ease-out-quart) infinite; }
+.anim-confirm-pop { animation: booking-confirm-pop 6s var(--ease-out-expo)  infinite; }
 
 .animate-fade-in       { animation: fade-in       0.4s var(--ease-out-quart) both; }
 .animate-fade-in-up    { animation: fade-in-up    0.6s var(--ease-out-expo)  both; }
@@ -252,6 +265,10 @@ h1, h2, h3, .font-display {
   border-radius: 50%;
   background: currentColor;
 }
+
+/* Fila scrolleable sin barra visible (tabs de filtros) */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 
 /* Scrollbar custom */
 .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }

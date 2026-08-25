@@ -74,10 +74,10 @@ export default function PerfilUsuario({ usuario, setUsuario }) {
   };
 
   return (
-    <div className="max-w-2xl bg-[#0B1221] border border-slate-800/60 rounded-2xl p-8 shadow-xl animate-fade-in">
+    <div className="max-w-2xl bg-[#0B1221] border border-slate-800/60 rounded-xl p-8 shadow-[0_4px_16px_rgba(0,0,0,0.05)] animate-fade-in">
       <div className="flex items-center gap-6 mb-8">
         <div
-          className="w-20 h-20 rounded-full flex items-center justify-center text-[#03070e] text-2xl font-black shadow-lg overflow-hidden border-2 border-emerald-500/20"
+          className="w-20 h-20 rounded-full flex items-center justify-center text-[#03070e] text-2xl font-bold shadow-[0_4px_16px_rgba(0,0,0,0.05)] overflow-hidden border-2 border-emerald-500/20"
           style={{ backgroundColor: avatarVisual ? "transparent" : "#10b981" }}
         >
           {avatarVisual ? (
@@ -89,49 +89,49 @@ export default function PerfilUsuario({ usuario, setUsuario }) {
 
         <div>
           <h3 className="text-xl font-bold text-white mb-1">Configuración de Cuenta</h3>
-          <p className="text-slate-500 text-sm">Gestiona tu información personal, foto y seguridad.</p>
+          <p className="text-[#787774] text-sm">Gestiona tu información personal, foto y seguridad.</p>
         </div>
       </div>
 
       <form onSubmit={handleGuardar} className="space-y-6">
         <div>
-          <label className="text-xs font-semibold text-slate-500 uppercase mb-2 block">Foto de Perfil</label>
+          <label className="text-xs font-semibold text-[#787774] uppercase mb-2 block">Foto de Perfil</label>
           <input
             type="file"
             accept="image/*"
             onChange={handleArchivoChange}
-            className="w-full bg-[#03070e] border border-slate-800 rounded-lg p-2 text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-emerald-500/10 file:text-emerald-500 hover:file:bg-emerald-500/20 cursor-pointer transition-all"
+            className="w-full bg-[#03070e] border border-slate-800 rounded-lg p-2 text-sm text-[#A8A29E] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-emerald-500/10 file:text-emerald-500 hover:file:bg-emerald-500/20 cursor-pointer transition-all"
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase mb-2 block">Nombre Completo</label>
+            <label className="text-xs font-semibold text-[#787774] uppercase mb-2 block">Nombre Completo</label>
             <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-[#03070e] border border-slate-800 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-emerald-500/50" required />
           </div>
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase mb-2 block">Correo Electrónico</label>
+            <label className="text-xs font-semibold text-[#787774] uppercase mb-2 block">Correo Electrónico</label>
             <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-[#03070e] border border-slate-800 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-emerald-500/50" required />
           </div>
         </div>
 
         <div className="pt-6 border-t border-slate-800/50">
           <h4 className="text-sm font-bold text-emerald-500 mb-4">Cambiar Contraseña</h4>
-          <p className="text-xs text-slate-500 mb-6">Deja estos campos vacíos si no deseas cambiar tu clave actual.</p>
+          <p className="text-xs text-[#787774] mb-6">Deja estos campos vacíos si no deseas cambiar tu clave actual.</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase mb-2 block">Nueva Contraseña</label>
+              <label className="text-xs font-semibold text-[#787774] uppercase mb-2 block">Nueva Contraseña</label>
               <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="••••••••" minLength={8} className="w-full bg-[#03070e] border border-slate-800 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-emerald-500/50" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase mb-2 block">Confirmar Contraseña</label>
+              <label className="text-xs font-semibold text-[#787774] uppercase mb-2 block">Confirmar Contraseña</label>
               <input type="password" name="password_confirmation" value={formData.password_confirmation} onChange={handleChange} placeholder="••••••••" className="w-full bg-[#03070e] border border-slate-800 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-emerald-500/50" />
             </div>
           </div>
         </div>
 
-        <button type="submit" disabled={cargando} className="w-full md:w-auto px-10 py-3 bg-emerald-500 hover:bg-emerald-400 text-[#03070e] font-bold rounded-lg transition-all shadow-lg shadow-emerald-500/10 disabled:opacity-50">
+        <button type="submit" disabled={cargando} className="w-full md:w-auto px-10 py-3 bg-emerald-500 hover:bg-emerald-400 text-[#03070e] font-bold rounded-lg transition-all shadow-[0_4px_16px_rgba(0,0,0,0.05)] shadow-emerald-500/10 disabled:opacity-50">
           {cargando ? "Guardando..." : "Actualizar Perfil"}
         </button>
       </form>

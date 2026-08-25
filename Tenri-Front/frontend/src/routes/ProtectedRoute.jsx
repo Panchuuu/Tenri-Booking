@@ -22,8 +22,8 @@ export default function ProtectedRoute({ children, roles }) {
   // Mientras revalidamos sesión, mostramos spinner para evitar parpadeo
   if (cargandoSesion) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#060b14]">
-        <div className="w-12 h-12 border-4 border-slate-200 border-t-emerald-500 dark:border-slate-800 rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[#FBFBFA] dark:bg-[#060b14]">
+        <div className="w-12 h-12 border-4 border-[#EAEAEA] border-t-emerald-500 dark:border-slate-800 rounded-full animate-spin"></div>
       </div>
     );
   }
