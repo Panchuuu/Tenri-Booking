@@ -81,6 +81,58 @@ class MiTiendaTest extends TestCase
         $this->assertEquals($nombreOriginal, $barberia->nombre);
     }
 
+    public function test_admin_puede_actualizar_ubicacion(): void
+    {
+        [$admin, $barberia] = $this->crearAdminConBarberia();
+
+        $this->actingAs($admin)->putJson('/api/mi-barberia', [
+            'direccion' => 'Av. Providencia 1234, Local 5, Santiago',
+            'latitud'   => -33.4489,
+            'longitud'  => -70.6693,
+        ])->assertStatus(200);
+
+        $barberia->refresh();
+        $this->assertEquals('Av. Providencia 1234, Local 5, Santiago', $barberia->direccion);
+        $this->assertEqualsWithDelta(-33.4489, $barberia->latitud, 0.0001);
+        $this->assertEqualsWithDelta(-70.6693, $barberia->longitud, 0.0001);
+    }
+
+    public function test_coordenada_suelta_es_rechazada(): void
+    {
+        [$admin] = $this->crearAdminConBarberia();
+
+        // Una latitud sin longitud (o viceversa) no sirve para "cerca de mí".
+        $this->actingAs($admin)->putJson('/api/mi-barberia', [
+            'latitud' => -33.4489,
+        ])->assertStatus(422);
+
+        $this->actingAs($admin)->putJson('/api/mi-barberia', [
+            'longitud' => -70.6693,
+        ])->assertStatus(422);
+    }
+
+    public function test_admin_puede_borrar_su_ubicacion(): void
+    {
+        [$admin, $barberia] = $this->crearAdminConBarberia();
+        $barberia->update([
+            'direccion' => 'Av. Vieja 111',
+            'latitud'   => -33.4,
+            'longitud'  => -70.6,
+        ]);
+
+        // Mi Tienda envía los campos vacíos para limpiar la ubicación.
+        $this->actingAs($admin)->putJson('/api/mi-barberia', [
+            'direccion' => '',
+            'latitud'   => null,
+            'longitud'  => null,
+        ])->assertStatus(200);
+
+        $barberia->refresh();
+        $this->assertNull($barberia->direccion);
+        $this->assertNull($barberia->latitud);
+        $this->assertNull($barberia->longitud);
+    }
+
     public function test_rubro_aparece_en_listado_publico(): void
     {
         Barberia::factory()->create(['rubro' => 'perfumeria']);

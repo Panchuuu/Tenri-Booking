@@ -21,7 +21,11 @@ class RecordatorioCitaMail extends Mailable implements ShouldQueue
 
     public function build()
     {
-        return $this->subject('⏰ Recordatorio: tu cita es mañana - TENRI Barber')
+        // Asunto con la tienda real (multi-tenant); fallback a la marca
+        // de la plataforma si la cita no tiene barbería asociada.
+        $tienda = $this->cita->barberia->nombre ?? 'TENRI Barber';
+
+        return $this->subject("⏰ Recordatorio: tu cita es mañana - {$tienda}")
                     ->view('emails.recordatorio_cita');
     }
 }
