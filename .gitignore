@@ -1,2 +1,5 @@
 # Archivos locales de sesión de Claude Code
 .claude/
+
+# Cache local de herramientas de diseño
+.impeccable/

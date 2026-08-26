@@ -36,6 +36,16 @@ export default function BookingModal({
   const [cargandoBarberos, setCargandoBarberos] = useState(!esReagendar);
   const [cargandoHoras, setCargandoHoras]       = useState(false);
   const [cargandoReserva, setCargandoReserva]   = useState(false);
+  const [cerrando, setCerrando]                 = useState(false);
+
+  // Cierre con animación de salida: pinta fade/scale-out y desmonta
+  // al terminar. `forzar` salta el candado de cargandoReserva (se usa
+  // en el cierre post-éxito, donde la reserva sigue "en vuelo").
+  const solicitarCierre = (forzar = false) => {
+    if (cerrando || (cargandoReserva && !forzar)) return;
+    setCerrando(true);
+    setTimeout(onClose, 200);
+  };
 
   const hoyLocal = new Date().toLocaleDateString("sv-SE");
 
@@ -51,10 +61,15 @@ export default function BookingModal({
   // Cerrar con Escape — salvo con una reserva en vuelo, para no
   // descartar el modal (y su feedback) por un cierre accidental.
   useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape" && !cargandoReserva) onClose(); };
+    const onKey = (e) => {
+      if (e.key === "Escape" && !cargandoReserva && !cerrando) {
+        setCerrando(true);
+        setTimeout(onClose, 200);
+      }
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, cargandoReserva]);
+  }, [onClose, cargandoReserva, cerrando]);
 
   // Cargar barberos al abrir (solo si no es reagendamiento)
   useEffect(() => {
@@ -147,7 +162,7 @@ export default function BookingModal({
         if (r.ok) {
           toast.success("¡Cita reagendada con éxito!");
           onSuccess?.();
-          onClose();
+          solicitarCierre(true);
         } else {
           const err = await r.json();
           toast.error(err.error || err.message || "No se pudo reagendar.");
@@ -160,7 +175,7 @@ export default function BookingModal({
         if (r.ok) {
           toast.success("¡Cita agendada con éxito!");
           onSuccess?.();
-          onClose();
+          solicitarCierre(true);
         } else {
           const err = await r.json();
           toast.error(err.message || "Error al agendar.");
@@ -206,14 +221,14 @@ export default function BookingModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-start justify-center bg-slate-900/40 dark:bg-[#03070e]/80 backdrop-blur-md p-0 sm:p-4 sm:pt-8 pt-16 animate-fade-in"
-      onClick={() => { if (!cargandoReserva) onClose(); }}
+      className={`fixed inset-0 z-[100] flex items-start justify-center bg-slate-900/40 dark:bg-[#03070e]/80 backdrop-blur-md p-0 sm:p-4 sm:pt-8 pt-16 ${cerrando ? "animate-fade-out" : "animate-fade-in"}`}
+      onClick={() => solicitarCierre()}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={esReagendar ? "Reagendar cita" : `Reservar ${servicio?.nombre || "servicio"}`}
-        className="bg-white dark:bg-[#0B1221] border-t sm:border border-[#EAEAEA] dark:border-slate-800/60 sm:rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-scale-in"
+        className={`bg-white dark:bg-[#0B1221] border-t sm:border border-[#EAEAEA] dark:border-slate-800/60 sm:rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh] ${cerrando ? "animate-scale-out" : "animate-scale-in"}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
@@ -248,7 +263,7 @@ export default function BookingModal({
               )}
             </div>
           </div>
-          <button onClick={() => { if (!cargandoReserva) onClose(); }} disabled={cargandoReserva} aria-label="Cerrar"
+          <button onClick={() => solicitarCierre()} disabled={cargandoReserva} aria-label="Cerrar"
                   className="p-2 text-[#A8A29E] hover:text-[#2F3437] hover:bg-[#F7F6F3] dark:hover:text-rose-400 dark:hover:bg-slate-800/50 disabled:opacity-50 disabled:cursor-not-allowed rounded-full transition-colors shrink-0">
             <XIcon />
           </button>
@@ -333,12 +348,12 @@ export default function BookingModal({
                           type="button"
                           disabled={bloqueado}
                           onClick={() => !bloqueado && setHora(h)}
-                          className={`py-3 rounded-lg text-sm font-medium tabular transition-all relative ${
+                          className={`py-3 rounded-lg text-sm font-medium tabular transition-all ease-[var(--ease-spring)] duration-300 relative ${
                             bloqueado
                               ? "bg-[#FBFBFA] dark:bg-slate-900/40 text-slate-300 dark:text-slate-700 cursor-not-allowed"
                               : selected
                                 ? "bg-emerald-500 text-white dark:text-[#03070e] shadow-[0_2px_8px_rgba(0,0,0,0.04)] shadow-emerald-500/30 scale-[1.04] font-bold"
-                                : "bg-white dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-700/50 text-[#2F3437] dark:text-slate-300 hover:border-emerald-500/50 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50/30 dark:hover:bg-emerald-500/5"
+                                : "bg-white dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-700/50 text-[#2F3437] dark:text-slate-300 hover:border-emerald-500/50 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50/30 dark:hover:bg-emerald-500/5 active:scale-95"
                           }`}
                         >
                           <span className={bloqueado ? "line-through decoration-rose-400/50" : ""}>{h}</span>
@@ -371,7 +386,7 @@ export default function BookingModal({
           </p>
         )}
         <div className="px-6 sm:px-8 py-4 border-t border-[#EAEAEA] dark:border-slate-800/60 bg-[#FBFBFA]/50 dark:bg-[#080d18] flex gap-3">
-          <button type="button" onClick={() => { if (!cargandoReserva) onClose(); }} disabled={cargandoReserva}
+          <button type="button" onClick={() => solicitarCierre()} disabled={cargandoReserva}
                   className="px-5 py-3 rounded-xl font-semibold text-[#2F3437] hover:text-[#111111] hover:bg-[#F7F6F3] dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
             Cancelar
           </button>

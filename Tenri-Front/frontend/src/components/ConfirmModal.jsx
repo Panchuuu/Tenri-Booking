@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 // ============================================================
 // 🪟 CONFIRM MODAL — Modal de confirmación reutilizable
@@ -17,7 +17,21 @@ export default function ConfirmModal({
   // Backwards-compatible: default false no afecta a consumidores existentes.
   cargando = false,
 }) {
-  if (!abierto) return null;
+  // El modal sigue montado 200ms tras cerrarse para poder pintar la
+  // animación de salida (abierto=false ⇒ fade/scale-out ⇒ desmontar).
+  const [montado, setMontado] = useState(abierto);
+  useEffect(() => {
+    if (abierto) {
+      setMontado(true);
+      return;
+    }
+    const t = setTimeout(() => setMontado(false), 200);
+    return () => clearTimeout(t);
+  }, [abierto]);
+
+  if (!montado) return null;
+
+  const cerrandose = !abierto;
 
   const colorConfirmar =
     variante === "danger"
@@ -31,11 +45,11 @@ export default function ConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/50 dark:bg-[#03070e]/80 backdrop-blur-sm animate-fade-in p-4"
-      onClick={cargando ? undefined : onCancelar}
+      className={`fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/50 dark:bg-[#03070e]/80 backdrop-blur-sm p-4 ${cerrandose ? "animate-fade-out" : "animate-fade-in"}`}
+      onClick={cargando || cerrandose ? undefined : onCancelar}
     >
       <div
-        className="bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl"
+        className={`bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl ${cerrandose ? "animate-scale-out" : "animate-scale-in"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-4 mb-4">
@@ -61,7 +75,7 @@ export default function ConfirmModal({
           <button
             onClick={onConfirmar}
             disabled={cargando}
-            className={`px-5 py-2.5 font-bold rounded-lg transition-colors shadow-none disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 ${colorConfirmar}`}
+            className={`px-5 py-2.5 font-bold rounded-lg transition-all active:scale-[0.97] shadow-none disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 ${colorConfirmar}`}
           >
             {cargando ? (
               <>

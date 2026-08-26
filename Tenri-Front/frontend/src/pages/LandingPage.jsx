@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { distanciaKm, formatearDistancia, obtenerUbicacion } from "../utils/geo";
 import SkeletonCard from "../components/SkeletonCard";
 import { SearchIcon } from "../components/Icons";
+import useReveal from "../hooks/useReveal";
 
 // ============================================================
 // 📄 LANDING — Rediseño minimal editorial (Facelift Light)
@@ -17,15 +18,17 @@ import { SearchIcon } from "../components/Icons";
 // ============================================================
 
 function BarberiaCard({ barberia, index, esFavorita, onToggleFavorito }) {
+  const revealRef = useReveal();
   const promedio = barberia.calificacion_promedio != null
     ? Math.round(Number(barberia.calificacion_promedio) * 10) / 10
     : null;
 
   return (
     <Link
+      ref={revealRef}
       to={`/barberia/${barberia.slug}`}
-      className="group relative block bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl p-5 transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-[#DBDBD8] dark:hover:border-slate-700 animate-fade-in-up"
-      style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}
+      className="reveal group relative block bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl p-5 transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-[#DBDBD8] dark:hover:border-slate-700"
+      style={{ "--reveal-delay": `${(index % 3) * 90}ms` }}
     >
       {/* Corazón de favorito */}
       <button
@@ -319,7 +322,8 @@ export default function LandingPage() {
               className="text-5xl sm:text-6xl font-bold text-[#111111] dark:text-white tracking-tight leading-[1.08] mb-5 animate-fade-in-up"
               style={{ textWrap: "balance" }}
             >
-              Reserva tu próxima cita en 30 segundos.
+              Reserva tu próxima cita en{" "}
+              <span className="underline-wavy whitespace-nowrap">30 segundos</span>.
             </h1>
             <p className="text-lg text-[#787774] dark:text-slate-400 leading-relaxed mb-10 animate-fade-in-up delay-100">
               Barberías, salones y centros de estética con agenda online.
@@ -346,8 +350,15 @@ export default function LandingPage() {
 
           {/* ── Viñeta animada: el flujo de reserva en 6 segundos ──
               Representación fija en modo claro (como captura de la app),
-              decorativa: oculta a lectores de pantalla y en mobile. */}
-          <div className="hidden lg:block relative animate-fade-in-up delay-300 select-none pointer-events-none" aria-hidden="true">
+              decorativa: oculta a lectores de pantalla. En mobile se
+              muestra compacta bajo el texto; en lg vuelve a su columna. */}
+          <div
+            className="relative animate-fade-in-up delay-300 select-none pointer-events-none w-full max-w-sm mx-auto lg:max-w-none"
+            aria-hidden="true"
+          >
+            {/* Resplandor ambiental detrás de la viñeta */}
+            <div className="absolute -inset-10 -z-10 rounded-full bg-emerald-400/15 dark:bg-emerald-500/10 blur-3xl animate-glow-pulse" />
+            <div className="animate-float relative">
             <div className="bg-white border border-[#EAEAEA] rounded-xl p-6 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
               {/* Tienda */}
               <div className="flex items-center gap-3 mb-5 pb-5 border-b border-black/5">
@@ -400,6 +411,7 @@ export default function LandingPage() {
                 <p className="text-[13px] font-semibold text-[#111111] leading-tight">Cita confirmada</p>
                 <p className="text-[11px] text-[#787774] tabular">mié 26 · 10:30 — Corte Senior</p>
               </span>
+            </div>
             </div>
           </div>
         </div>

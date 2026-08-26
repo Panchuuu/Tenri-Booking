@@ -2,7 +2,8 @@
    🎨 TENRI BARBER — SISTEMA DE DISEÑO (Fase 3)
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+/* Las fuentes (Plus Jakarta Sans + JetBrains Mono) se cargan desde
+   index.html con <link> para no bloquear el primer render. */
 
 @import "tailwindcss";
 
@@ -50,6 +51,8 @@
   /* Easing */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  /* Resorte con leve overshoot — para selecciones y micro-interacciones */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ============================================================
@@ -101,6 +104,23 @@ h1, h2, h3, .font-display {
   to   { opacity: 1; transform: scale(1); }
 }
 
+/* Salidas — los modales se despiden en vez de desaparecer de golpe */
+@keyframes fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes scale-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.96); }
+}
+
+/* Ícono del toggle de tema: entra rotando con resorte */
+@keyframes icon-pop {
+  from { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+  to   { opacity: 1; transform: rotate(0deg) scale(1); }
+}
+
 @keyframes slide-in-right {
   from { opacity: 0; transform: translate3d(20px, 0, 0); }
   to   { opacity: 1; transform: translate3d(0, 0, 0); }
@@ -144,6 +164,9 @@ h1, h2, h3, .font-display {
 .anim-confirm-pop { animation: booking-confirm-pop 6s var(--ease-out-expo)  infinite; }
 
 .animate-fade-in       { animation: fade-in       0.4s var(--ease-out-quart) both; }
+.animate-fade-out      { animation: fade-out      0.2s ease both; }
+.animate-scale-out     { animation: scale-out     0.2s var(--ease-out-quart) both; }
+.animate-icon-pop      { animation: icon-pop      0.35s var(--ease-spring)  both; }
 .animate-fade-in-up    { animation: fade-in-up    0.6s var(--ease-out-expo)  both; }
 .animate-fade-in-down  { animation: fade-in-down  0.4s var(--ease-out-quart) both; }
 .animate-scale-in      { animation: scale-in      0.4s var(--ease-out-expo)  both; }
@@ -151,6 +174,24 @@ h1, h2, h3, .font-display {
 .animate-float         { animation: float 6s ease-in-out infinite; }
 .animate-glow-pulse    { animation: glow-pulse 4s ease-in-out infinite; }
 .animate-blob          { animation: blob 12s ease-in-out infinite; }
+
+/* ── Scroll reveal ──
+   Estado inicial oculto; useReveal (IntersectionObserver) agrega
+   .is-visible cuando el elemento entra al viewport. El delay del
+   stagger se pasa por --reveal-delay desde el JSX. */
+.reveal {
+  opacity: 0;
+}
+/* Animación (no transition): así no pisa las transitions de hover
+   que el elemento ya tenga vía Tailwind. */
+.reveal.is-visible {
+  animation: fade-in-up 0.7s var(--ease-out-expo) both;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+/* Sin JS o con motion reducido el contenido jamás debe quedar oculto */
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; }
+}
 
 /* Stagger delays — para reveals secuenciales */
 .delay-100 { animation-delay: 100ms; }

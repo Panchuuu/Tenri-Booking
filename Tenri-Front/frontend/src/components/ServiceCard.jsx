@@ -69,7 +69,7 @@ export default function ServiceCard({ servicio, onAgendar }) {
 
           <button
             onClick={() => onAgendar(servicio)}
-            className="group/btn relative px-5 py-3 bg-slate-900 dark:bg-emerald-500 hover:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-[#03070e] text-sm font-bold rounded-full transition-all duration-300 shadow-none hover:shadow-[0_4px_16px_rgba(0,0,0,0.05)] hover:shadow-emerald-500/20 flex items-center gap-2 overflow-hidden"
+            className="group/btn relative px-5 py-3 bg-slate-900 dark:bg-emerald-500 hover:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-[#03070e] text-sm font-bold rounded-full transition-all duration-300 active:scale-95 shadow-none hover:shadow-[0_4px_16px_rgba(0,0,0,0.05)] hover:shadow-emerald-500/20 flex items-center gap-2 overflow-hidden"
           >
             <span className="relative z-10">Agendar</span>
             <svg className="relative z-10 w-4 h-4 transition-transform group-hover/btn:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">

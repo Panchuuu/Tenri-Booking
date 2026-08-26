@@ -98,9 +98,13 @@ export default function PublicLayout() {
             <button
               onClick={toggleTema}
               aria-label={esOscuro ? "Activar modo claro" : "Activar modo oscuro"}
-              className="w-10 h-10 sm:w-auto sm:h-auto sm:p-2.5 rounded-full flex items-center justify-center text-[#2F3437] hover:bg-[#F7F6F3] dark:text-slate-400 dark:hover:bg-slate-800/50 transition-colors"
+              className="w-10 h-10 sm:w-auto sm:h-auto sm:p-2.5 rounded-full flex items-center justify-center text-[#2F3437] hover:bg-[#F7F6F3] dark:text-slate-400 dark:hover:bg-slate-800/50 transition-all active:scale-90"
             >
-              {esOscuro ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
+              {/* key: re-monta el ícono al cambiar de tema para que
+                  el pop con rotación se dispare en cada toggle */}
+              <span key={esOscuro ? "sol" : "luna"} className="animate-icon-pop inline-flex">
+                {esOscuro ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
+              </span>
             </button>
 
             {usuario ? (

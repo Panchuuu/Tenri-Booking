@@ -4,6 +4,7 @@ import useApi from "../hooks/useApi";
 import ServiceCard from "../components/ServiceCard";
 import BookingModal from "../components/BookingModal";
 import { ArrowLeftIcon } from "../components/Icons";
+import useReveal from "../hooks/useReveal";
 
 // ============================================================
 // 📄 BARBERIA DETALLE — Fase 3 visual
@@ -27,6 +28,7 @@ function ServiceCardSkeleton() {
 
 export default function BarberiaDetallePage() {
   const { slug } = useParams();
+  const revealRef = useReveal();
   const [servicioSeleccionado, setServicioSeleccionado] = useState(null);
 
   // Fetch directo por slug: antes se buscaba en la página 1 del listado,
@@ -194,7 +196,12 @@ export default function BarberiaDetallePage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             {servicios.map((s, idx) => (
-              <div key={s.id} className="animate-fade-in-up" style={{ animationDelay: `${idx * 80}ms` }}>
+              <div
+                key={s.id}
+                ref={revealRef}
+                className="reveal"
+                style={{ "--reveal-delay": `${(idx % 3) * 90}ms` }}
+              >
                 <ServiceCard servicio={s} onAgendar={setServicioSeleccionado} />
               </div>
             ))}
