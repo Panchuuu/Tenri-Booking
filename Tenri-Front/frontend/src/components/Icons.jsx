@@ -127,6 +127,23 @@ export const ArrowLeftIcon = (props) => (
   </Icon>
 );
 
+export const PencilIcon = (props) => (
+  <Icon {...props}>
+    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+  </Icon>
+);
+
+export const BuildingIcon = (props) => (
+  <Icon {...props}>
+    <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+    <line x1="9" y1="7" x2="10" y2="7"></line>
+    <line x1="14" y1="7" x2="15" y2="7"></line>
+    <line x1="9" y1="11" x2="10" y2="11"></line>
+    <line x1="14" y1="11" x2="15" y2="11"></line>
+    <path d="M10 22v-4a2 2 0 1 1 4 0v4"></path>
+  </Icon>
+);
+
 export const TrashIcon = (props) => (
   <Icon {...props}>
     <polyline points="3 6 5 6 21 6"></polyline>

@@ -83,8 +83,8 @@ export default function BarberoPerfilPage() {
   };
 
   // Clases compartidas para inputs del formulario.
-  const inputClass = "w-full bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-3 text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all";
-  const labelClass = "text-xs font-semibold text-[#787774] uppercase tracking-wider";
+  const inputClass = "w-full bg-paper-2 dark:bg-abyss border border-line dark:border-slate-800 rounded-xl p-3 text-sm text-ink dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all";
+  const labelClass = "text-xs font-semibold text-muted uppercase tracking-wider";
 
   return (
     <div className="max-w-lg mx-auto px-4 py-8">
@@ -138,8 +138,8 @@ export default function BarberoPerfilPage() {
         </div>
 
         {/* ── Contraseña (opcional) ── */}
-        <div className="bg-[#FBFBFA] dark:bg-slate-800/30 rounded-xl p-4 space-y-4">
-          <p className="text-xs font-semibold text-[#A8A29E] uppercase tracking-wider">
+        <div className="bg-paper-2 dark:bg-slate-800/30 rounded-xl p-4 space-y-4">
+          <p className="text-xs font-semibold text-faint uppercase tracking-wider">
             Cambiar contraseña <span className="normal-case font-normal">(opcional)</span>
           </p>
           <input
@@ -197,7 +197,7 @@ export default function BarberoPerfilPage() {
         <button
           type="submit"
           disabled={guardando}
-          className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-not-allowed text-white dark:text-[#03070e] font-bold rounded-xl transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] shadow-emerald-500/25 flex items-center justify-center gap-2"
+          className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-not-allowed text-white dark:text-abyss font-bold rounded-xl transition-colors shadow-[0_4px_16px_rgba(0,0,0,0.05)] shadow-emerald-500/25 flex items-center justify-center gap-2"
         >
           {guardando ? (
             <>

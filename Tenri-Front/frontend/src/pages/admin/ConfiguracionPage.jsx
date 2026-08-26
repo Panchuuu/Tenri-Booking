@@ -14,13 +14,13 @@ import { parseApiErrorSync } from "../../utils/parseApiError";
 // 🔧 FIX #6 (PDF): min/max opcionales para clampar valor en botones y input.
 function Counter({ titulo, valor, onChange, step = 1, min = 0, max = Infinity }) {
   return (
-    <div className="bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800/80 rounded-xl p-4 flex flex-col items-center shadow-inner">
-      <span className="text-[10px] font-bold text-[#787774] uppercase tracking-widest mb-3">{titulo}</span>
+    <div className="bg-paper-2 dark:bg-abyss border border-line dark:border-slate-800/80 rounded-xl p-4 flex flex-col items-center shadow-inner">
+      <span className="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">{titulo}</span>
       <div className="flex items-center gap-4">
         <button
           type="button"
           onClick={() => onChange(Math.min(max, Math.max(min, valor - step)))}
-          className="w-8 h-8 rounded-full bg-[#EAEAEA] dark:bg-slate-800 hover:bg-emerald-500 hover:text-[#03070e] text-[#2F3437] dark:text-white flex items-center justify-center font-bold transition-colors"
+          className="w-8 h-8 rounded-full bg-line dark:bg-slate-800 hover:bg-emerald-500 hover:text-abyss text-ink-2 dark:text-white flex items-center justify-center font-bold transition-colors"
         >
           −
         </button>
@@ -28,12 +28,12 @@ function Counter({ titulo, valor, onChange, step = 1, min = 0, max = Infinity })
           type="number"
           value={valor}
           onChange={(e) => onChange(Math.min(max, Math.max(min, parseInt(e.target.value) || min)))}
-          className="w-14 text-center bg-transparent text-2xl font-bold text-[#111111] dark:text-white outline-none appearance-none"
+          className="w-14 text-center bg-transparent text-2xl font-bold text-ink dark:text-white outline-none appearance-none"
         />
         <button
           type="button"
           onClick={() => onChange(Math.min(max, Math.max(min, valor + step)))}
-          className="w-8 h-8 rounded-full bg-[#EAEAEA] dark:bg-slate-800 hover:bg-emerald-500 hover:text-[#03070e] text-[#2F3437] dark:text-white flex items-center justify-center font-bold transition-colors"
+          className="w-8 h-8 rounded-full bg-line dark:bg-slate-800 hover:bg-emerald-500 hover:text-abyss text-ink-2 dark:text-white flex items-center justify-center font-bold transition-colors"
         >
           +
         </button>
@@ -90,11 +90,11 @@ export default function ConfiguracionPage() {
         subtitulo="Define las reglas bajo las cuales los clientes interactúan con tu barbería"
       />
 
-      <div className="bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl p-8 max-w-3xl shadow-none">
-        <h3 className="text-xl font-bold text-[#111111] dark:text-white mb-2">
+      <div className="bg-white dark:bg-card border border-line dark:border-slate-800/60 rounded-xl p-8 max-w-3xl shadow-none">
+        <h3 className="text-xl font-bold text-ink dark:text-white mb-2">
           Política de Cancelación
         </h3>
-        <p className="text-[#787774] text-sm mb-8">
+        <p className="text-muted text-sm mb-8">
           Anticipación mínima requerida para que un cliente pueda cancelar sin penalización.
         </p>
 
@@ -116,11 +116,11 @@ export default function ConfiguracionPage() {
             )}
           </div>
 
-          <div className="pt-4 border-t border-[#EAEAEA] dark:border-slate-800/60">
+          <div className="pt-4 border-t border-line dark:border-slate-800/60">
             <button
               type="submit"
               disabled={guardando}
-              className="w-full md:w-auto px-8 py-3 bg-emerald-500 hover:bg-emerald-600 dark:hover:bg-emerald-400 text-white dark:text-[#03070e] font-bold rounded-lg transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.04)] disabled:opacity-50"
+              className="w-full md:w-auto px-8 py-3 bg-emerald-500 hover:bg-emerald-600 dark:hover:bg-emerald-400 text-white dark:text-abyss font-bold rounded-lg transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.04)] disabled:opacity-50"
             >
               {guardando ? "Guardando..." : "Guardar Configuración"}
             </button>

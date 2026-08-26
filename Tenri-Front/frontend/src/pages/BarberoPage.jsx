@@ -14,7 +14,7 @@ function getBadgeStyle(estado) {
     finalizada: "text-[#346538] bg-[#EDF3EC] dark:text-emerald-400 dark:bg-emerald-400/10 border-[#D3E5D2] dark:border-emerald-400/20",
     cancelada:  "text-[#9F2F2D] bg-[#FDEBEC] dark:text-rose-400 dark:bg-rose-400/10 border-[#F7D4D6] dark:border-rose-400/20",
   };
-  return estados[estado?.toLowerCase()] || "text-[#787774] bg-[#F7F6F3] dark:bg-slate-800 border-transparent";
+  return estados[estado?.toLowerCase()] || "text-muted bg-paper dark:bg-slate-800 border-transparent";
 }
 
 export default function BarberoPage() {
@@ -66,13 +66,13 @@ export default function BarberoPage() {
 
       {cargando ? (
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-12 h-12 border-4 border-[#EAEAEA] border-t-emerald-500 dark:border-slate-800 rounded-full animate-spin mb-4" />
-          <p className="text-[#787774] font-medium">Sincronizando agenda...</p>
+          <div className="w-12 h-12 border-4 border-line border-t-emerald-500 dark:border-slate-800 rounded-full animate-spin mb-4" />
+          <p className="text-muted font-medium">Sincronizando agenda...</p>
         </div>
       ) : error ? (
-        <div className="bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl p-12 text-center shadow-none">
-          <h3 className="text-xl font-bold text-[#111111] dark:text-white mb-2">No pudimos cargar tu agenda</h3>
-          <p className="text-[#787774] dark:text-slate-400 mb-6">Revisa tu conexión e inténtalo de nuevo.</p>
+        <div className="bg-white dark:bg-card border border-line dark:border-slate-800/60 rounded-xl p-12 text-center shadow-none">
+          <h3 className="text-xl font-bold text-ink dark:text-white mb-2">No pudimos cargar tu agenda</h3>
+          <p className="text-muted dark:text-slate-400 mb-6">Revisa tu conexión e inténtalo de nuevo.</p>
           <button
             onClick={refetch}
             className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-lg transition-colors"
@@ -91,23 +91,23 @@ export default function BarberoPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {citasHoy.length === 0 ? (
-                <div className="col-span-full py-10 text-center border-2 border-dashed border-[#EAEAEA] dark:border-slate-800 rounded-xl text-[#787774]">
+                <div className="col-span-full py-10 text-center border-2 border-dashed border-line dark:border-slate-800 rounded-xl text-muted">
                   No hay citas programadas para hoy.
                 </div>
               ) : (
                 citasHoy.map((c) => (
-                  <div key={c.id} className="bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl p-5 sm:p-6 shadow-none relative overflow-hidden">
+                  <div key={c.id} className="bg-white dark:bg-card border border-line dark:border-slate-800/60 rounded-xl p-5 sm:p-6 shadow-none relative overflow-hidden">
                     <div className={`absolute top-0 left-0 w-1 h-full ${c.estado === "confirmada" ? "bg-[#1F6C9F]" : "bg-[#956400]"}`} />
                     <div className="flex justify-between items-start mb-3">
-                      <span className="font-display text-2xl font-bold text-[#111111] dark:text-white tabular">
+                      <span className="font-display text-2xl font-bold text-ink dark:text-white tabular">
                         {c.hora?.substring(0, 5)}
                       </span>
                       <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase border ${getBadgeStyle(c.estado)}`}>
                         {c.estado}
                       </span>
                     </div>
-                    <h4 className="text-base font-bold text-[#111111] dark:text-slate-200 mb-1 truncate">{c.cliente?.name}</h4>
-                    <p className="text-xs text-[#787774] mb-5 truncate">
+                    <h4 className="text-base font-bold text-ink dark:text-slate-200 mb-1 truncate">{c.cliente?.name}</h4>
+                    <p className="text-xs text-muted mb-5 truncate">
                       {c.servicio?.nombre} • {c.servicio?.duracion || c.servicio?.duracion_minutos} min
                     </p>
 
@@ -115,7 +115,7 @@ export default function BarberoPage() {
                       <button
                         onClick={() => handleFinalizar(c.id)}
                         disabled={mutando}
-                        className="flex-1 py-2 bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white dark:bg-emerald-500/10 dark:hover:bg-emerald-500 dark:text-emerald-500 dark:hover:text-[#03070e] disabled:opacity-50 disabled:cursor-not-allowed text-xs font-bold rounded-lg transition-all border border-emerald-200 dark:border-emerald-500/20"
+                        className="flex-1 py-2 bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white dark:bg-emerald-500/10 dark:hover:bg-emerald-500 dark:text-emerald-500 dark:hover:text-abyss disabled:opacity-50 disabled:cursor-not-allowed text-xs font-bold rounded-lg transition-all border border-emerald-200 dark:border-emerald-500/20"
                       >
                         Finalizar
                       </button>
@@ -138,14 +138,14 @@ export default function BarberoPage() {
 
           {/* ============ RESTO DE LA AGENDA ============ */}
           <section>
-            <h3 className="tag-pill text-[#787774] mb-6">Resto de la agenda</h3>
+            <h3 className="tag-pill text-muted mb-6">Resto de la agenda</h3>
 
-            <div className="bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl overflow-hidden shadow-none">
+            <div className="bg-white dark:bg-card border border-line dark:border-slate-800/60 rounded-xl overflow-hidden shadow-none">
 
               {/* DESKTOP */}
               <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-[#FBFBFA] dark:bg-[#080d18] border-b border-[#EAEAEA] dark:border-slate-800/60 text-[#787774] font-semibold uppercase text-[10px] tracking-widest">
+                  <thead className="bg-paper-2 dark:bg-night-2 border-b border-line dark:border-slate-800/60 text-muted font-semibold uppercase text-[10px] tracking-widest">
                     <tr>
                       <th className="px-6 py-4">Fecha</th>
                       <th className="px-6 py-4">Hora</th>
@@ -157,11 +157,11 @@ export default function BarberoPage() {
                   </thead>
                   <tbody className="divide-y divide-black/5 dark:divide-slate-800/40">
                     {otrasCitas.map((c) => (
-                      <tr key={c.id} className="hover:bg-[#F7F6F3] dark:hover:bg-slate-800/20">
-                        <td className="px-6 py-4 text-[#787774] font-medium">{c.fecha}</td>
-                        <td className="px-6 py-4 text-[#111111] dark:text-slate-200 font-bold tabular">{c.hora?.substring(0, 5)}</td>
-                        <td className="px-6 py-4 text-[#787774]">{c.cliente?.name}</td>
-                        <td className="px-6 py-4 text-[#787774] text-xs">{c.servicio?.nombre}</td>
+                      <tr key={c.id} className="hover:bg-paper dark:hover:bg-slate-800/20">
+                        <td className="px-6 py-4 text-muted font-medium">{c.fecha}</td>
+                        <td className="px-6 py-4 text-ink dark:text-slate-200 font-bold tabular">{c.hora?.substring(0, 5)}</td>
+                        <td className="px-6 py-4 text-muted">{c.cliente?.name}</td>
+                        <td className="px-6 py-4 text-muted text-xs">{c.servicio?.nombre}</td>
                         <td className="px-6 py-4 text-center">
                           <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase border ${getBadgeStyle(c.estado)}`}>
                             {c.estado}
@@ -187,7 +187,7 @@ export default function BarberoPage() {
               {/* MOBILE */}
               <div className="lg:hidden divide-y divide-black/5 dark:divide-slate-800/40">
                 {otrasCitas.length === 0 ? (
-                  <div className="p-8 text-center text-[#787774] text-sm">
+                  <div className="p-8 text-center text-muted text-sm">
                     No hay otras citas en esta página.
                   </div>
                 ) : (
@@ -195,14 +195,14 @@ export default function BarberoPage() {
                     <div key={c.id} className="p-4 flex items-center justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-2 mb-1">
-                          <span className="font-bold text-[#111111] dark:text-white tabular">{c.hora?.substring(0,5)}</span>
-                          <span className="text-xs text-[#787774]">·</span>
-                          <span className="text-xs text-[#787774]">{c.fecha}</span>
+                          <span className="font-bold text-ink dark:text-white tabular">{c.hora?.substring(0,5)}</span>
+                          <span className="text-xs text-muted">·</span>
+                          <span className="text-xs text-muted">{c.fecha}</span>
                         </div>
-                        <p className="text-sm font-medium text-[#2F3437] dark:text-slate-300 truncate">
+                        <p className="text-sm font-medium text-ink-2 dark:text-slate-300 truncate">
                           {c.cliente?.name}
                         </p>
-                        <p className="text-xs text-[#787774] truncate">{c.servicio?.nombre}</p>
+                        <p className="text-xs text-muted truncate">{c.servicio?.nombre}</p>
                         {/* FIX #14: botón cancelar también en mobile */}
                         {c.estado === "confirmada" && c.fecha >= hoy && (
                           <button
@@ -222,22 +222,22 @@ export default function BarberoPage() {
               </div>
 
               {/* Paginación */}
-              <div className="flex items-center justify-between bg-[#FBFBFA] dark:bg-[#080d18] px-4 sm:px-6 py-4 border-t border-[#EAEAEA] dark:border-slate-800/60">
-                <p className="text-xs text-[#787774] font-medium">
-                  Página <span className="text-[#111111] dark:text-white font-bold">{paginacion.actual}</span> de {paginacion.total}
+              <div className="flex items-center justify-between bg-paper-2 dark:bg-night-2 px-4 sm:px-6 py-4 border-t border-line dark:border-slate-800/60">
+                <p className="text-xs text-muted font-medium">
+                  Página <span className="text-ink dark:text-white font-bold">{paginacion.actual}</span> de {paginacion.total}
                 </p>
                 <div className="flex gap-2">
                   <button
                     disabled={paginacion.actual === 1}
                     onClick={() => setPagina(paginacion.actual - 1)}
-                    className="px-3 sm:px-4 py-2 bg-[#EAEAEA] dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg text-xs font-bold transition-colors"
+                    className="px-3 sm:px-4 py-2 bg-line dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg text-xs font-bold transition-colors"
                   >
                     ← Anterior
                   </button>
                   <button
                     disabled={paginacion.actual === paginacion.total}
                     onClick={() => setPagina(paginacion.actual + 1)}
-                    className="px-3 sm:px-4 py-2 bg-emerald-500 hover:bg-emerald-600 dark:hover:bg-emerald-400 text-white dark:text-[#03070e] disabled:opacity-30 disabled:cursor-not-allowed rounded-lg text-xs font-bold transition-colors"
+                    className="px-3 sm:px-4 py-2 bg-emerald-500 hover:bg-emerald-600 dark:hover:bg-emerald-400 text-white dark:text-abyss disabled:opacity-30 disabled:cursor-not-allowed rounded-lg text-xs font-bold transition-colors"
                   >
                     Siguiente →
                   </button>

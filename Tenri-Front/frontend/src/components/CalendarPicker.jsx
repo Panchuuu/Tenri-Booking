@@ -89,7 +89,7 @@ export default function CalendarPicker({ valor, onChange, minFecha }) {
         && mesVisible.getMonth() > minDate.getMonth());
 
   return (
-    <div className="bg-white dark:bg-[#0e1729] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl p-5 shadow-none">
+    <div className="bg-white dark:bg-card-2 border border-line dark:border-slate-800/60 rounded-xl p-5 shadow-none">
 
       {/* Header: mes + navegación */}
       <div className="flex items-center justify-between mb-5">
@@ -98,7 +98,7 @@ export default function CalendarPicker({ valor, onChange, minFecha }) {
           onClick={mesAnterior}
           disabled={!puedeRetroceder}
           aria-label="Mes anterior"
-          className="w-9 h-9 rounded-full flex items-center justify-center text-[#2F3437] dark:text-slate-400 hover:bg-[#F7F6F3] dark:hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-ink-2 dark:text-slate-400 hover:bg-paper dark:hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -106,10 +106,10 @@ export default function CalendarPicker({ valor, onChange, minFecha }) {
         </button>
 
         <div className="text-center">
-          <div className="font-display text-lg font-semibold text-[#111111] dark:text-white">
+          <div className="font-display text-lg font-semibold text-ink dark:text-white">
             {MESES[mesVisible.getMonth()]}
           </div>
-          <div className="text-[10px] uppercase tracking-widest text-[#787774] font-medium">
+          <div className="text-[10px] uppercase tracking-widest text-muted font-medium">
             {mesVisible.getFullYear()}
           </div>
         </div>
@@ -118,7 +118,7 @@ export default function CalendarPicker({ valor, onChange, minFecha }) {
           type="button"
           onClick={mesSiguiente}
           aria-label="Mes siguiente"
-          className="w-9 h-9 rounded-full flex items-center justify-center text-[#2F3437] dark:text-slate-400 hover:bg-[#F7F6F3] dark:hover:bg-slate-800 transition-colors"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-ink-2 dark:text-slate-400 hover:bg-paper dark:hover:bg-slate-800 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -131,7 +131,7 @@ export default function CalendarPicker({ valor, onChange, minFecha }) {
         {DIAS_SEMANA.map((d) => (
           <div
             key={d}
-            className="text-[10px] font-bold text-[#A8A29E] uppercase text-center py-1 tracking-widest"
+            className="text-[10px] font-bold text-faint uppercase text-center py-1 tracking-widest"
           >
             {d}
           </div>
@@ -154,11 +154,11 @@ export default function CalendarPicker({ valor, onChange, minFecha }) {
           if (esPasado) {
             clases += " text-slate-300 dark:text-slate-700 cursor-not-allowed";
           } else if (esSeleccionado) {
-            clases += " bg-emerald-500 text-white dark:text-[#03070e] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.04)] shadow-emerald-500/30 scale-105";
+            clases += " bg-emerald-500 text-white dark:text-abyss font-bold shadow-[0_2px_8px_rgba(0,0,0,0.04)] shadow-emerald-500/30 scale-105";
           } else if (esHoy) {
             clases += " text-emerald-600 dark:text-emerald-400 font-bold ring-1 ring-emerald-500/40 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-500/10";
           } else {
-            clases += " text-[#2F3437] dark:text-slate-300 cursor-pointer hover:bg-[#F7F6F3] dark:hover:bg-slate-800";
+            clases += " text-ink-2 dark:text-slate-300 cursor-pointer hover:bg-paper dark:hover:bg-slate-800";
           }
 
           return (
@@ -180,10 +180,10 @@ export default function CalendarPicker({ valor, onChange, minFecha }) {
       {/* Footer con info de selección */}
       {fechaSeleccionada && (
         <div className="mt-5 pt-4 border-t border-black/5 dark:border-slate-800/60 text-center">
-          <p className="text-[10px] uppercase tracking-widest font-bold text-[#A8A29E] mb-1">
+          <p className="text-[10px] uppercase tracking-widest font-bold text-faint mb-1">
             Seleccionado
           </p>
-          <p className="text-sm font-medium text-[#111111] dark:text-white capitalize">
+          <p className="text-sm font-medium text-ink dark:text-white capitalize">
             {fechaSeleccionada.toLocaleDateString("es-CL", {
               weekday: "long",
               day: "numeric",

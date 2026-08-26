@@ -79,8 +79,8 @@ export default function MiTiendaPage() {
     }
   };
 
-  const inputClass = "w-full bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-3 text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all";
-  const labelClass = "text-[10px] font-bold text-[#787774] uppercase tracking-widest block mb-2";
+  const inputClass = "w-full bg-paper-2 dark:bg-abyss border border-line dark:border-slate-800 rounded-xl p-3 text-sm text-ink dark:text-slate-200 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all";
+  const labelClass = "text-[10px] font-bold text-muted uppercase tracking-widest block mb-2";
 
   return (
     <div>
@@ -89,11 +89,11 @@ export default function MiTiendaPage() {
         subtitulo="El perfil público que ven tus clientes en el directorio"
       />
 
-      <form onSubmit={handleGuardar} className="bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl p-8 max-w-3xl shadow-none space-y-8">
+      <form onSubmit={handleGuardar} className="bg-white dark:bg-card border border-line dark:border-slate-800/60 rounded-xl p-8 max-w-3xl shadow-none space-y-8">
 
         {/* ── Identidad ── */}
         <div>
-          <h3 className="text-xl font-bold text-[#111111] dark:text-white mb-6">Identidad</h3>
+          <h3 className="text-xl font-bold text-ink dark:text-white mb-6">Identidad</h3>
 
           <div className="flex flex-col sm:flex-row gap-8 items-start">
             <ImageUploader
@@ -118,7 +118,7 @@ export default function MiTiendaPage() {
                   maxLength={60}
                   placeholder="Ej: Tenri Barber"
                 />
-                <p className="text-[11px] text-[#A8A29E] mt-1.5">
+                <p className="text-[11px] text-faint mt-1.5">
                   La URL pública ({barberia?.slug ? `/barberia/${barberia.slug}` : "…"}) no cambia al renombrar.
                 </p>
               </div>
@@ -143,10 +143,10 @@ export default function MiTiendaPage() {
                       type="color"
                       value={form.color_principal}
                       onChange={setCampo("color_principal")}
-                      className="w-12 h-11 rounded-lg border border-[#EAEAEA] dark:border-slate-800 bg-transparent cursor-pointer p-1"
+                      className="w-12 h-11 rounded-lg border border-line dark:border-slate-800 bg-transparent cursor-pointer p-1"
                       aria-label="Color de marca"
                     />
-                    <span className="text-sm font-mono text-[#787774]">{form.color_principal}</span>
+                    <span className="text-sm font-mono text-muted">{form.color_principal}</span>
                   </div>
                 </div>
               </div>
@@ -155,9 +155,9 @@ export default function MiTiendaPage() {
         </div>
 
         {/* ── Ubicación ── */}
-        <div className="pt-8 border-t border-[#EAEAEA] dark:border-slate-800/60">
-          <h3 className="text-xl font-bold text-[#111111] dark:text-white mb-2">Ubicación del Local</h3>
-          <p className="text-[#787774] text-sm mb-6">
+        <div className="pt-8 border-t border-line dark:border-slate-800/60">
+          <h3 className="text-xl font-bold text-ink dark:text-white mb-2">Ubicación del Local</h3>
+          <p className="text-muted text-sm mb-6">
             Escribe la dirección y <strong>elige una de las sugerencias</strong>: eso fija
             las coordenadas exactas para el "Cerca de mí" del directorio. Verifica el
             punto en el mapa antes de guardar.
@@ -183,7 +183,7 @@ export default function MiTiendaPage() {
 
             {/* Mapa de verificación del punto exacto */}
             {tieneCoordenadas && (
-              <div className="rounded-xl overflow-hidden border border-[#EAEAEA] dark:border-slate-800">
+              <div className="rounded-xl overflow-hidden border border-line dark:border-slate-800">
                 <iframe
                   title="Ubicación de la tienda"
                   className="w-full h-56 block"
@@ -191,7 +191,7 @@ export default function MiTiendaPage() {
                   referrerPolicy="no-referrer-when-downgrade"
                   src={`https://maps.google.com/maps?q=${latNum},${lngNum}&z=16&hl=es&output=embed`}
                 />
-                <div className="flex items-center justify-between px-3 py-2 bg-[#FBFBFA] dark:bg-[#080d18] text-[11px] text-[#A8A29E]">
+                <div className="flex items-center justify-between px-3 py-2 bg-paper-2 dark:bg-night-2 text-[11px] text-faint">
                   <span>Verifica que el pin esté sobre tu local.</span>
                   <a
                     href={`https://www.google.com/maps/search/?api=1&query=${latNum},${lngNum}`}
@@ -237,11 +237,11 @@ export default function MiTiendaPage() {
         </div>
 
         {/* ── Guardar ── */}
-        <div className="pt-4 border-t border-[#EAEAEA] dark:border-slate-800/60">
+        <div className="pt-4 border-t border-line dark:border-slate-800/60">
           <button
             type="submit"
             disabled={guardando}
-            className="w-full md:w-auto px-8 py-3 bg-emerald-500 hover:bg-emerald-600 dark:hover:bg-emerald-400 text-white dark:text-[#03070e] font-bold rounded-lg transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.04)] disabled:opacity-50"
+            className="w-full md:w-auto px-8 py-3 bg-emerald-500 hover:bg-emerald-600 dark:hover:bg-emerald-400 text-white dark:text-abyss font-bold rounded-lg transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.04)] disabled:opacity-50"
           >
             {guardando ? "Guardando..." : "Guardar Perfil"}
           </button>

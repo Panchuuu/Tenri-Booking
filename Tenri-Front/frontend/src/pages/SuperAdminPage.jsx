@@ -9,6 +9,15 @@ import ConfirmModal from "../components/ConfirmModal";
 import { parseApiErrorSync } from "../utils/parseApiError";
 import UsuariosTab from "../components/UsuariosTab";
 import EditarBarberiaModal from "../components/EditarBarberiaModal";
+import { BuildingIcon, PencilIcon, TrashIcon, UsersIcon } from "../components/Icons";
+
+// ============================================================
+// 👑 SUPERADMIN — Rediseño Master (Facelift Light + acento ámbar)
+// ============================================================
+// La lógica (carga acumulativa de barberías, CRUD, tabs) es la
+// misma de siempre; cambió solo la capa de presentación:
+// stats, tabs segmentadas, preview de marca y tabla refinada.
+// ============================================================
 
 const FORM_VACIO = {
   nombre_barberia: "",
@@ -18,6 +27,69 @@ const FORM_VACIO = {
   admin_email: "",
   admin_password: "",
 };
+
+// ── Piezas visuales pequeñas ─────────────────────────────────
+
+function StatCard({ etiqueta, valor, cargando, delay = 0 }) {
+  return (
+    <div
+      className="animate-fade-in-up bg-white dark:bg-card border border-line dark:border-slate-800/60 rounded-xl px-5 py-4"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] text-muted dark:text-slate-500 mb-1.5">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+        {etiqueta}
+      </p>
+      {cargando ? (
+        <div className="h-8 w-16 rounded-lg bg-paper dark:bg-slate-800/50 shimmer" />
+      ) : (
+        <p className="font-mono text-3xl font-semibold text-ink dark:text-white tabular leading-none">
+          {valor}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function EtiquetaCampo({ children }) {
+  return (
+    <label className="text-xs font-semibold text-muted mb-1 block">{children}</label>
+  );
+}
+
+const INPUT_BASE =
+  "w-full bg-white dark:bg-abyss border border-line dark:border-slate-800 rounded-lg p-2.5 text-sm text-ink dark:text-slate-200 outline-none focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/15 transition-all";
+
+function FilaSkeleton() {
+  return (
+    <div className="px-5 py-4 flex items-center gap-3">
+      <div className="w-10 h-10 rounded-lg bg-paper dark:bg-slate-800/50 shimmer shrink-0" />
+      <div className="flex-1 space-y-2">
+        <div className="h-3.5 w-40 max-w-full rounded bg-paper dark:bg-slate-800/50 shimmer" />
+        <div className="h-3 w-24 rounded bg-paper dark:bg-slate-800/50 shimmer" />
+      </div>
+      <div className="h-6 w-20 rounded-full bg-paper dark:bg-slate-800/50 shimmer hidden sm:block" />
+    </div>
+  );
+}
+
+// Botón de acción tipo "ghost" para filas de tabla
+function BotonAccion({ onClick, titulo, variante = "neutral", children }) {
+  const colores =
+    variante === "danger"
+      ? "text-faint hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-500/10"
+      : "text-faint hover:text-ink hover:bg-paper dark:hover:text-white dark:hover:bg-slate-800/50";
+  return (
+    <button
+      onClick={onClick}
+      title={titulo}
+      aria-label={titulo}
+      className={`w-8 h-8 rounded-lg inline-flex items-center justify-center transition-all active:scale-90 ${colores}`}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default function SuperAdminPage() {
   const [form, setForm] = useState(FORM_VACIO);
@@ -71,6 +143,9 @@ export default function SuperAdminPage() {
     refetch: refetchUsuarios,
   } = useApi("/superadmin/usuarios");
 
+  const usuarios = usuariosData?.data || usuariosData || [];
+  const suspendidos = usuarios.filter((u) => u.suspendido).length;
+
   const handleCrear = async (e) => {
     e.preventDefault();
     const fd = new FormData();
@@ -116,318 +191,368 @@ export default function SuperAdminPage() {
     }
   };
 
+  const tabBoton = (activa) =>
+    `inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ease-[var(--ease-spring)] active:scale-[0.97] ${
+      activa
+        ? "bg-white dark:bg-card text-ink dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-line dark:border-slate-700/60"
+        : "text-muted dark:text-slate-400 hover:text-ink dark:hover:text-white border border-transparent"
+    }`;
+
+  const tabContador = (activa) =>
+    `min-w-6 px-1.5 py-0.5 rounded-full text-[11px] font-bold font-mono tabular text-center ${
+      activa
+        ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+        : "bg-paper dark:bg-slate-800/60 text-faint"
+    }`;
+
   return (
     <div>
       <PageHeader
         tag="Tenri Master"
+        tono="amber"
         titulo={tabActiva === "negocios" ? "Red de negocios" : "Usuarios"}
         subtitulo={tabActiva === "negocios"
           ? "Administra los inquilinos (tenants) suscritos a TENRI SPA"
           : "Gestiona cuentas, roles y accesos del sistema"}
       />
 
-      {/* 🎯 Pack 3: selector de tabs */}
-      <div className="flex gap-2 mt-4 mb-6 border-b border-[#EAEAEA] dark:border-slate-800">
-        <button
-          onClick={() => setTabActiva("negocios")}
-          className={`pb-3 px-1 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-            tabActiva === "negocios"
-              ? "border-amber-500 text-amber-500"
-              : "border-transparent text-[#787774] hover:text-[#111111] dark:hover:text-white"
-          }`}
-        >
-          🏢 Red de Negocios
+      {/* ── Stats de la red ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <StatCard etiqueta="Negocios activos" valor={barberias.length}
+                  cargando={barberiasData === null} delay={0} />
+        <StatCard etiqueta="Usuarios" valor={usuarios.length}
+                  cargando={cargandoUsuarios} delay={80} />
+        <StatCard etiqueta="Suspendidos" valor={suspendidos}
+                  cargando={cargandoUsuarios} delay={160} />
+      </div>
+
+      {/* ── Tabs segmentadas ── */}
+      <div className="inline-flex items-center gap-1 p-1 rounded-full bg-paper dark:bg-night-2 border border-line dark:border-slate-800/60 mb-8">
+        <button onClick={() => setTabActiva("negocios")} className={tabBoton(tabActiva === "negocios")}>
+          <BuildingIcon className="w-4 h-4" />
+          Negocios
+          <span className={tabContador(tabActiva === "negocios")}>
+            {barberiasData === null ? "…" : barberias.length}
+          </span>
         </button>
-        <button
-          onClick={() => setTabActiva("usuarios")}
-          className={`pb-3 px-1 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-            tabActiva === "usuarios"
-              ? "border-amber-500 text-amber-500"
-              : "border-transparent text-[#787774] hover:text-[#111111] dark:hover:text-white"
-          }`}
-        >
-          👥 Usuarios
+        <button onClick={() => setTabActiva("usuarios")} className={tabBoton(tabActiva === "usuarios")}>
+          <UsersIcon className="w-4 h-4" />
+          Usuarios
+          <span className={tabContador(tabActiva === "usuarios")}>
+            {cargandoUsuarios ? "…" : usuarios.length}
+          </span>
         </button>
       </div>
 
       {tabActiva === "usuarios" && (
-      <UsuariosTab
-        usuarios={usuariosData?.data || usuariosData || []}
-        cargando={cargandoUsuarios}
-        onRefetch={refetchUsuarios}
-      />
-    )}
+        <UsuariosTab
+          usuarios={usuarios}
+          cargando={cargandoUsuarios}
+          onRefetch={refetchUsuarios}
+        />
+      )}
 
-    {tabActiva === "negocios" && (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+      {tabActiva === "negocios" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
 
-        {/* FORMULARIO DE CREACIÓN */}
-        <div className="lg:col-span-5 bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-amber-900/30 rounded-xl p-6 h-fit shadow-none relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-orange-400" />
-
-          <h3 className="font-display text-xl font-bold text-[#111111] dark:text-white mb-6">Nuevo negocio</h3>
-
-          <form onSubmit={handleCrear} className="space-y-5">
-            <div className="space-y-4 p-4 bg-[#FBFBFA] dark:bg-[#080d18] rounded-xl border border-[#EAEAEA] dark:border-slate-800/60">
-              <h4 className="text-xs font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest">
-                🏢 Datos de la empresa
-              </h4>
-              <div>
-                <div className="flex items-baseline justify-between mb-1">
-                  <label className="text-xs font-semibold text-[#787774] block">Nombre comercial</label>
-                  {/* 🔧 FIX #8 (PDF): contador visual del límite max:60 del backend.
-                      También previene FIX #12 (nombre largo rompe navbar): si el
-                      input no permite >60, no llega a guardarse y romper el layout. */}
-                  <CharacterCounter actual={form.nombre_barberia.length} max={60} />
-                </div>
-                <input
-                  type="text" value={form.nombre_barberia}
-                  onChange={(e) => setForm({ ...form, nombre_barberia: e.target.value })}
-                  className="w-full bg-white dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-lg p-2.5 text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-amber-500/50"
-                  placeholder="Ej: Barbería VIP"
-                  required
-                  maxLength={60}
-                  minLength={3}
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-[#787774] mb-1 block">Color de marca</label>
-                <div className="flex gap-3 items-center">
-                  <input
-                    type="color" value={form.color_principal}
-                    onChange={(e) => setForm({ ...form, color_principal: e.target.value })}
-                    className="w-10 h-10 rounded cursor-pointer bg-white dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 p-0.5 shrink-0"
-                  />
-                  <input
-                    type="text" value={form.color_principal}
-                    onChange={(e) => setForm({ ...form, color_principal: e.target.value })}
-                    className="flex-1 bg-white dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-lg p-2.5 text-sm text-[#111111] dark:text-slate-200 outline-none uppercase font-mono min-w-0"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-[#787774] mb-1 block">Logo (opcional)</label>
-                <input
-                  id="input-logo" type="file" accept="image/*"
-                  onChange={(e) => setForm({ ...form, logo_archivo: e.target.files[0] })}
-                  className="w-full bg-white dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-lg p-2 text-sm text-[#787774] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-amber-500/10 file:text-amber-600 dark:file:text-amber-500 hover:file:bg-amber-500/20 cursor-pointer"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-4 p-4 bg-[#FBFBFA] dark:bg-[#080d18] rounded-xl border border-[#EAEAEA] dark:border-slate-800/60">
-              <h4 className="text-xs font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest">
-                👤 Dueño / Administrador
-              </h4>
-              <div>
-                <label className="text-xs font-semibold text-[#787774] mb-1 block">Nombre completo</label>
-                <input
-                  type="text" value={form.admin_nombre}
-                  onChange={(e) => setForm({ ...form, admin_nombre: e.target.value })}
-                  className="w-full bg-white dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-lg p-2.5 text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-amber-500/50"
-                  placeholder="Juan Pérez" required
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-[#787774] mb-1 block">Correo (login)</label>
-                <input
-                  type="email" value={form.admin_email}
-                  onChange={(e) => setForm({ ...form, admin_email: e.target.value })}
-                  className="w-full bg-white dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-lg p-2.5 text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-amber-500/50"
-                  placeholder="juan@negocio.com" required
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-[#787774] mb-1 block">Contraseña temporal</label>
-                <input
-                  type="text" value={form.admin_password}
-                  onChange={(e) => setForm({ ...form, admin_password: e.target.value })}
-                  className="w-full bg-white dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-lg p-2.5 text-sm text-[#111111] dark:text-slate-200 outline-none focus:border-amber-500/50"
-                  placeholder="Mínimo 8 caracteres" required minLength={8}
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit" disabled={cargando}
-              className={`w-full py-3.5 rounded-xl font-bold text-white dark:text-[#03070e] transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)] ${
-                cargando
-                  ? "bg-amber-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-amber-500 to-orange-400 hover:from-amber-400 hover:to-orange-300 hover:-translate-y-0.5"
-              }`}
-            >
-              {cargando ? "Creando..." : "Crear empresa"}
-            </button>
-          </form>
-        </div>
-
-        {/* LISTA DE BARBERÍAS */}
-        <div className="lg:col-span-7 bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl shadow-none overflow-hidden">
-
-          {errorBarberias && barberias.length === 0 ? (
-            <div className="p-12 text-center">
-              <p className="text-[#787774] mb-4">No pudimos cargar el listado de empresas.</p>
-              <button
-                onClick={refetch}
-                className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-white dark:text-[#03070e] font-bold text-sm rounded-lg transition-colors"
+          {/* ════ FORMULARIO DE CREACIÓN ════ */}
+          <div className="lg:col-span-5 animate-fade-in-up bg-white dark:bg-card border border-line dark:border-slate-800/60 rounded-xl p-6 h-fit">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-display text-xl font-bold text-ink dark:text-white">
+                Nuevo negocio
+              </h3>
+              {/* Preview de marca en vivo */}
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-base border border-black/5 dark:border-white/10 transition-colors duration-300"
+                style={{ backgroundColor: form.color_principal || "#10b981" }}
+                title="Así se verá el avatar del negocio"
               >
-                Reintentar
-              </button>
-            </div>
-          ) : barberiasData === null ? (
-            <div className="p-12 text-center text-[#787774]">
-              Cargando empresas...
-            </div>
-          ) : barberias.length === 0 ? (
-            <div className="p-12 text-center text-[#787774]">
-              No hay empresas registradas aún.
-            </div>
-          ) : (
-            <>
-              {/* 💻 DESKTOP: tabla */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-[#FBFBFA] dark:bg-[#080d18] border-b border-[#EAEAEA] dark:border-slate-800/60 text-[#787774] font-semibold uppercase text-[10px] tracking-widest">
-                    <tr>
-                      <th className="px-5 py-4">ID</th>
-                      <th className="px-5 py-4">Empresa</th>
-                      <th className="px-5 py-4">Slug</th>
-                      <th className="px-5 py-4 text-right">Color</th>
-                      <th className="px-5 py-4 text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-black/5 dark:divide-slate-800/40">
-                    {barberias.map((b) => (
-                      <tr key={b.id} className="hover:bg-[#F7F6F3] dark:hover:bg-slate-800/20">
-                        <td className="px-5 py-4 text-[#787774] font-mono text-xs">#{b.id}</td>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-3">
-                            {b.logo_url ? (
-                              <img src={b.logo_url} alt={b.nombre}
-                                   className="w-10 h-10 rounded-lg object-cover border border-[#EAEAEA] dark:border-slate-700/50 bg-white" />
-                            ) : (
-                              <div
-                                className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-xs border border-[#EAEAEA] dark:border-slate-700/50 shrink-0"
-                                style={{ backgroundColor: b.color_principal || "#10b981" }}
-                              >
-                                {b.nombre?.substring(0, 1).toUpperCase()}
-                              </div>
-                            )}
-                            <span className="text-[#111111] dark:text-slate-200 font-bold">{b.nombre}</span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4 text-[#787774] font-mono text-xs">/{b.slug}</td>
-                        <td className="px-5 py-4 text-right">
-                          <span
-                            className="inline-block px-2 py-1 rounded text-xs font-mono"
-                            style={{ backgroundColor: `${b.color_principal}20`, color: b.color_principal }}
-                          >
-                            {b.color_principal}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-right space-x-4">
-                          <button
-                            onClick={() => setEditandoBarberia(b)}
-                            className="text-cyan-600 dark:text-cyan-500 text-xs font-bold uppercase tracking-wider hover:underline"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => setConfirmarEliminarBarberia(b)}
-                            className="text-rose-600 dark:text-rose-500 text-xs font-bold uppercase tracking-wider hover:underline"
-                          >
-                            Eliminar
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {(form.nombre_barberia || "T").substring(0, 1).toUpperCase()}
               </div>
+            </div>
 
-              {/* 📱 MOBILE: cards */}
-              <div className="md:hidden divide-y divide-black/5 dark:divide-slate-800/40">
-                {barberias.map((b) => (
-                  <div key={b.id} className="p-4 flex items-center gap-4">
-                    {b.logo_url ? (
-                      <img src={b.logo_url} alt={b.nombre}
-                           className="w-12 h-12 rounded-xl object-cover border border-[#EAEAEA] dark:border-slate-700/50 bg-white shrink-0" />
-                    ) : (
-                      <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-base border border-[#EAEAEA] dark:border-slate-700/50 shrink-0"
-                        style={{ backgroundColor: b.color_principal || "#10b981" }}
-                      >
-                        {b.nombre?.substring(0, 1).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2">
-                        <h4 className="font-bold text-[#111111] dark:text-white truncate">{b.nombre}</h4>
-                        <span className="text-[#A8A29E] font-mono text-[10px] shrink-0">#{b.id}</span>
-                      </div>
-                      <p className="text-xs text-[#787774] font-mono mt-0.5 truncate">/{b.slug}</p>
-                      <span
-                        className="inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-mono"
-                        style={{ backgroundColor: `${b.color_principal}20`, color: b.color_principal }}
-                      >
-                        {b.color_principal}
-                      </span>
-                      <div className="flex gap-4 mt-2">
-                        <button
-                          onClick={() => setEditandoBarberia(b)}
-                          className="text-cyan-600 dark:text-cyan-500 text-xs font-bold uppercase tracking-wider hover:underline"
+            <form onSubmit={handleCrear} className="space-y-6">
+              <fieldset className="space-y-4">
+                <legend className="flex items-center gap-2 text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-[0.15em] mb-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  Datos de la empresa
+                </legend>
+                <div>
+                  <div className="flex items-baseline justify-between mb-1">
+                    <EtiquetaCampo>Nombre comercial</EtiquetaCampo>
+                    {/* 🔧 FIX #8 (PDF): contador visual del límite max:60 del backend.
+                        También previene FIX #12 (nombre largo rompe navbar). */}
+                    <CharacterCounter actual={form.nombre_barberia.length} max={60} />
+                  </div>
+                  <input
+                    type="text" value={form.nombre_barberia}
+                    onChange={(e) => setForm({ ...form, nombre_barberia: e.target.value })}
+                    className={INPUT_BASE}
+                    placeholder="Ej: Barbería VIP"
+                    required
+                    maxLength={60}
+                    minLength={3}
+                  />
+                </div>
+
+                <div>
+                  <EtiquetaCampo>Color de marca</EtiquetaCampo>
+                  <div className="flex gap-3 items-center">
+                    <input
+                      type="color" value={form.color_principal}
+                      onChange={(e) => setForm({ ...form, color_principal: e.target.value })}
+                      className="w-10 h-10 rounded-lg cursor-pointer bg-white dark:bg-abyss border border-line dark:border-slate-800 p-0.5 shrink-0"
+                    />
+                    <input
+                      type="text" value={form.color_principal}
+                      onChange={(e) => setForm({ ...form, color_principal: e.target.value })}
+                      className={`${INPUT_BASE} flex-1 uppercase font-mono min-w-0`}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <EtiquetaCampo>Logo (opcional)</EtiquetaCampo>
+                  <input
+                    id="input-logo" type="file" accept="image/*"
+                    onChange={(e) => setForm({ ...form, logo_archivo: e.target.files[0] })}
+                    className="w-full bg-white dark:bg-abyss border border-line dark:border-slate-800 rounded-lg p-2 text-sm text-muted file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-amber-500/10 file:text-amber-600 dark:file:text-amber-500 hover:file:bg-amber-500/20 file:transition-colors cursor-pointer"
+                  />
+                </div>
+              </fieldset>
+
+              <div className="border-t border-line dark:border-slate-800/60" />
+
+              <fieldset className="space-y-4">
+                <legend className="flex items-center gap-2 text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-[0.15em] mb-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  Dueño / Administrador
+                </legend>
+                <div>
+                  <EtiquetaCampo>Nombre completo</EtiquetaCampo>
+                  <input
+                    type="text" value={form.admin_nombre}
+                    onChange={(e) => setForm({ ...form, admin_nombre: e.target.value })}
+                    className={INPUT_BASE}
+                    placeholder="Juan Pérez" required
+                  />
+                </div>
+                <div>
+                  <EtiquetaCampo>Correo (login)</EtiquetaCampo>
+                  <input
+                    type="email" value={form.admin_email}
+                    onChange={(e) => setForm({ ...form, admin_email: e.target.value })}
+                    className={INPUT_BASE}
+                    placeholder="juan@negocio.com" required
+                  />
+                </div>
+                <div>
+                  <EtiquetaCampo>Contraseña temporal</EtiquetaCampo>
+                  <input
+                    type="text" value={form.admin_password}
+                    onChange={(e) => setForm({ ...form, admin_password: e.target.value })}
+                    className={INPUT_BASE}
+                    placeholder="Mínimo 8 caracteres" required minLength={8}
+                  />
+                </div>
+              </fieldset>
+
+              <button
+                type="submit" disabled={cargando}
+                className={`group w-full py-3 pl-5 pr-2 rounded-full font-bold text-white dark:text-abyss transition-all flex items-center justify-between gap-3 ${
+                  cargando
+                    ? "bg-amber-400/70 cursor-not-allowed"
+                    : "bg-amber-500 hover:bg-amber-400 hover:shadow-[0_4px_16px_rgba(0,0,0,0.05)] hover:shadow-amber-500/25 active:scale-[0.98]"
+                }`}
+              >
+                <span>{cargando ? "Creando…" : "Crear empresa"}</span>
+                <span className="w-8 h-8 rounded-full bg-black/10 dark:bg-white/20 flex items-center justify-center transition-transform duration-300 ease-[var(--ease-spring)] group-hover:translate-x-0.5">
+                  {cargando ? (
+                    <span className="w-4 h-4 border-2 border-white/40 border-t-white dark:border-black/30 dark:border-t-black/70 rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5-5 5M5 12h13" />
+                    </svg>
+                  )}
+                </span>
+              </button>
+            </form>
+          </div>
+
+          {/* ════ LISTA DE NEGOCIOS ════ */}
+          <div className="lg:col-span-7 animate-fade-in-up delay-100 bg-white dark:bg-card border border-line dark:border-slate-800/60 rounded-xl overflow-hidden h-fit">
+
+            {errorBarberias && barberias.length === 0 ? (
+              <div className="p-12 text-center">
+                <p className="text-muted mb-4">No pudimos cargar el listado de empresas.</p>
+                <button
+                  onClick={refetch}
+                  className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-white dark:text-abyss font-bold text-sm rounded-full transition-all active:scale-[0.97]"
+                >
+                  Reintentar
+                </button>
+              </div>
+            ) : barberiasData === null ? (
+              <div className="divide-y divide-black/5 dark:divide-slate-800/40">
+                {[...Array(5)].map((_, i) => <FilaSkeleton key={i} />)}
+              </div>
+            ) : barberias.length === 0 ? (
+              <div className="p-14 text-center">
+                <div className="w-14 h-14 mx-auto bg-paper dark:bg-night-2 rounded-xl flex items-center justify-center mb-5 border border-line dark:border-slate-800">
+                  <BuildingIcon className="w-6 h-6 text-faint" />
+                </div>
+                <h4 className="font-display text-lg font-bold text-ink dark:text-white mb-1.5">
+                  Aún no hay negocios en la red
+                </h4>
+                <p className="text-sm text-muted max-w-xs mx-auto">
+                  Crea el primero con el formulario — el dueño recibirá su acceso de administrador.
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* 💻 DESKTOP: tabla */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-paper-2 dark:bg-night-2 border-b border-line dark:border-slate-800/60 text-muted font-semibold uppercase text-[10px] tracking-widest">
+                      <tr>
+                        <th className="px-5 py-4">Empresa</th>
+                        <th className="px-5 py-4">Slug</th>
+                        <th className="px-5 py-4">Marca</th>
+                        <th className="px-5 py-4 text-right">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-black/5 dark:divide-slate-800/40">
+                      {barberias.map((b, idx) => (
+                        <tr
+                          key={b.id}
+                          className="group animate-fade-in-up hover:bg-paper dark:hover:bg-slate-800/20 transition-colors"
+                          style={{ animationDelay: `${Math.min(idx, 8) * 40}ms` }}
                         >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => setConfirmarEliminarBarberia(b)}
-                          className="text-rose-600 dark:text-rose-500 text-xs font-bold uppercase tracking-wider hover:underline"
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-3">
+                              {b.logo_url ? (
+                                <img src={b.logo_url} alt={b.nombre}
+                                     className="w-10 h-10 rounded-lg object-cover border border-line dark:border-slate-700/50 bg-white" />
+                              ) : (
+                                <div
+                                  className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-xs border border-black/5 dark:border-white/10 shrink-0"
+                                  style={{ backgroundColor: b.color_principal || "#10b981" }}
+                                >
+                                  {b.nombre?.substring(0, 1).toUpperCase()}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-ink dark:text-slate-200 font-bold truncate">{b.nombre}</p>
+                                <p className="text-faint font-mono text-[11px] tabular">#{b.id}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5 text-muted font-mono text-xs">/{b.slug}</td>
+                          <td className="px-5 py-3.5">
+                            <span className="inline-flex items-center gap-2 font-mono text-xs text-muted dark:text-slate-400">
+                              <span
+                                className="w-3.5 h-3.5 rounded-full border border-black/10 dark:border-white/10 shrink-0"
+                                style={{ backgroundColor: b.color_principal }}
+                              />
+                              {b.color_principal?.toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                              <BotonAccion onClick={() => setEditandoBarberia(b)} titulo={`Editar ${b.nombre}`}>
+                                <PencilIcon className="w-4 h-4" />
+                              </BotonAccion>
+                              <BotonAccion onClick={() => setConfirmarEliminarBarberia(b)} titulo={`Eliminar ${b.nombre}`} variante="danger">
+                                <TrashIcon className="w-4 h-4" />
+                              </BotonAccion>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* 📱 MOBILE: cards */}
+                <div className="md:hidden divide-y divide-black/5 dark:divide-slate-800/40">
+                  {barberias.map((b, idx) => (
+                    <div
+                      key={b.id}
+                      className="p-4 flex items-center gap-4 animate-fade-in-up"
+                      style={{ animationDelay: `${Math.min(idx, 8) * 40}ms` }}
+                    >
+                      {b.logo_url ? (
+                        <img src={b.logo_url} alt={b.nombre}
+                             className="w-12 h-12 rounded-xl object-cover border border-line dark:border-slate-700/50 bg-white shrink-0" />
+                      ) : (
+                        <div
+                          className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-base border border-black/5 dark:border-white/10 shrink-0"
+                          style={{ backgroundColor: b.color_principal || "#10b981" }}
                         >
-                          Eliminar
-                        </button>
+                          {b.nombre?.substring(0, 1).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2">
+                          <h4 className="font-bold text-ink dark:text-white truncate">{b.nombre}</h4>
+                          <span className="text-faint font-mono text-[10px] tabular shrink-0">#{b.id}</span>
+                        </div>
+                        <p className="text-xs text-muted font-mono mt-0.5 truncate">/{b.slug}</p>
+                        <span className="inline-flex items-center gap-1.5 mt-1.5 font-mono text-[10px] text-muted">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full border border-black/10 dark:border-white/10"
+                            style={{ backgroundColor: b.color_principal }}
+                          />
+                          {b.color_principal?.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <BotonAccion onClick={() => setEditandoBarberia(b)} titulo={`Editar ${b.nombre}`}>
+                          <PencilIcon className="w-4 h-4" />
+                        </BotonAccion>
+                        <BotonAccion onClick={() => setConfirmarEliminarBarberia(b)} titulo={`Eliminar ${b.nombre}`} variante="danger">
+                          <TrashIcon className="w-4 h-4" />
+                        </BotonAccion>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
 
-              {/* Refetch fallido con data previa: avisamos sin botar la lista */}
-              {errorBarberias && (
-                <p className="p-4 text-center text-sm text-rose-500 border-t border-black/5 dark:border-slate-800/40">
-                  No se pudo actualizar el listado.
-                  <button onClick={refetch} className="underline font-semibold ml-1">
-                    Reintentar
-                  </button>
-                </p>
-              )}
-            </>
-          )}
+                {/* Refetch fallido con data previa: avisamos sin botar la lista */}
+                {errorBarberias && (
+                  <p className="p-4 text-center text-sm text-rose-500 border-t border-black/5 dark:border-slate-800/40">
+                    No se pudo actualizar el listado.
+                    <button onClick={refetch} className="underline font-semibold ml-1">
+                      Reintentar
+                    </button>
+                  </p>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
-    )}
+      )}
 
-    {/* ── Modales del CRUD de barberías ── */}
-    <EditarBarberiaModal
-      barberia={editandoBarberia}
-      onClose={() => setEditandoBarberia(null)}
-      onGuardado={refetch}
-    />
+      {/* ── Modales del CRUD de barberías ── */}
+      <EditarBarberiaModal
+        barberia={editandoBarberia}
+        onClose={() => setEditandoBarberia(null)}
+        onGuardado={refetch}
+      />
 
-    <ConfirmModal
-      abierto={confirmarEliminarBarberia !== null}
-      cargando={eliminando}
-      titulo="Eliminar barbería"
-      mensaje={confirmarEliminarBarberia
-        ? `¿Seguro que deseas eliminar "${confirmarEliminarBarberia.nombre}"? Se eliminarán todos sus servicios, citas, barberos y datos asociados. Esta acción no se puede deshacer.`
-        : ""}
-      textoConfirmar="Sí, eliminar todo"
-      variante="danger"
-      onConfirmar={handleEliminarBarberia}
-      onCancelar={() => setConfirmarEliminarBarberia(null)}
-    />
+      <ConfirmModal
+        abierto={confirmarEliminarBarberia !== null}
+        cargando={eliminando}
+        titulo="Eliminar barbería"
+        mensaje={confirmarEliminarBarberia
+          ? `¿Seguro que deseas eliminar "${confirmarEliminarBarberia.nombre}"? Se eliminarán todos sus servicios, citas, barberos y datos asociados. Esta acción no se puede deshacer.`
+          : ""}
+        textoConfirmar="Sí, eliminar todo"
+        variante="danger"
+        onConfirmar={handleEliminarBarberia}
+        onCancelar={() => setConfirmarEliminarBarberia(null)}
+      />
 
     </div>
   );

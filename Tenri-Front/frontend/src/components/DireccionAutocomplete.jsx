@@ -97,17 +97,17 @@ export default function DireccionAutocomplete({
       />
 
       {buscando && (
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-[#EAEAEA] border-t-emerald-500 rounded-full animate-spin" />
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-line border-t-emerald-500 rounded-full animate-spin" />
       )}
 
       {abierto && sugerencias.length > 0 && (
-        <ul className="absolute z-30 mt-2 w-full bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-700 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.05)] overflow-hidden max-h-72 overflow-y-auto">
+        <ul className="absolute z-30 mt-2 w-full bg-white dark:bg-card border border-line dark:border-slate-700 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.05)] overflow-hidden max-h-72 overflow-y-auto">
           {sugerencias.map((s) => (
             <li key={s.id}>
               <button
                 type="button"
                 onClick={() => elegir(s)}
-                className="w-full text-left px-4 py-3 text-sm text-[#2F3437] dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors flex items-start gap-2.5 border-b border-black/5 dark:border-slate-800/60 last:border-0"
+                className="w-full text-left px-4 py-3 text-sm text-ink-2 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors flex items-start gap-2.5 border-b border-black/5 dark:border-slate-800/60 last:border-0"
               >
                 <svg className="w-4 h-4 mt-0.5 shrink-0 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -117,7 +117,7 @@ export default function DireccionAutocomplete({
               </button>
             </li>
           ))}
-          <li className="px-4 py-1.5 text-[10px] text-[#A8A29E] bg-[#FBFBFA] dark:bg-[#080d18]">
+          <li className="px-4 py-1.5 text-[10px] text-faint bg-paper-2 dark:bg-night-2">
             Datos de © OpenStreetMap
           </li>
         </ul>

@@ -27,7 +27,7 @@ function BarberiaCard({ barberia, index, esFavorita, onToggleFavorito }) {
     <Link
       ref={revealRef}
       to={`/barberia/${barberia.slug}`}
-      className="reveal group relative block bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl p-5 transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-[#DBDBD8] dark:hover:border-slate-700"
+      className="reveal group relative block bg-white dark:bg-card border border-line dark:border-slate-800/60 rounded-xl p-5 transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-line-strong dark:hover:border-slate-700"
       style={{ "--reveal-delay": `${(index % 3) * 90}ms` }}
     >
       {/* Corazón de favorito */}
@@ -42,7 +42,7 @@ function BarberiaCard({ barberia, index, esFavorita, onToggleFavorito }) {
         className={`absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center border transition-all active:scale-90 ${
           esFavorita
             ? "bg-[#FDEBEC] border-[#F7D4D6] text-[#9F2F2D] dark:bg-rose-500/10 dark:border-rose-500/30 dark:text-rose-400"
-            : "bg-white border-[#EAEAEA] text-[#A8A29E] hover:text-[#9F2F2D] hover:border-[#F7D4D6] dark:bg-slate-800/60 dark:border-slate-700 dark:hover:text-rose-400"
+            : "bg-white border-line text-faint hover:text-[#9F2F2D] hover:border-[#F7D4D6] dark:bg-slate-800/60 dark:border-slate-700 dark:hover:text-rose-400"
         }`}
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill={esFavorita ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
@@ -65,10 +65,10 @@ function BarberiaCard({ barberia, index, esFavorita, onToggleFavorito }) {
           )}
         </div>
         <div className="min-w-0">
-          <span className="block text-[10px] font-bold uppercase tracking-[0.05em] text-[#787774] dark:text-slate-500 mb-0.5">
+          <span className="block text-[10px] font-bold uppercase tracking-[0.05em] text-muted dark:text-slate-500 mb-0.5">
             {barberia.rubro_nombre || "Barbería"}
           </span>
-          <h3 className="text-[17px] font-semibold text-[#111111] dark:text-white leading-snug truncate">
+          <h3 className="text-[17px] font-semibold text-ink dark:text-white leading-snug truncate">
             {barberia.nombre}
           </h3>
         </div>
@@ -82,8 +82,8 @@ function BarberiaCard({ barberia, index, esFavorita, onToggleFavorito }) {
               <svg className="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M11.48 3.5c.16-.38.88-.38 1.04 0l2.12 5.11 5.51.44c.44.04.62.59.28.88l-4.2 3.6 1.28 5.38c.1.43-.36.77-.74.54L12 16.56l-4.77 2.9c-.38.23-.84-.11-.74-.54l1.28-5.39-4.2-3.59a.47.47 0 0 1 .28-.88l5.51-.44 2.12-5.1z" />
               </svg>
-              <span className="font-semibold text-[#111111] dark:text-white tabular">{promedio.toLocaleString("es-CL")}</span>
-              <span className="text-[#A8A29E]">({barberia.total_resenas})</span>
+              <span className="font-semibold text-ink dark:text-white tabular">{promedio.toLocaleString("es-CL")}</span>
+              <span className="text-faint">({barberia.total_resenas})</span>
             </span>
           )}
           {barberia._distancia != null && (
@@ -95,13 +95,13 @@ function BarberiaCard({ barberia, index, esFavorita, onToggleFavorito }) {
       ) : null}
 
       {barberia.direccion && (
-        <p className="text-xs text-[#A8A29E] dark:text-slate-500 truncate mb-3">
+        <p className="text-xs text-faint dark:text-slate-500 truncate mb-3">
           {barberia.direccion}
         </p>
       )}
 
       {/* Acción */}
-      <p className="flex items-center gap-1.5 pt-3 border-t border-black/5 dark:border-slate-800/60 text-sm font-medium text-[#787774] dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+      <p className="flex items-center gap-1.5 pt-3 border-t border-black/5 dark:border-slate-800/60 text-sm font-medium text-muted dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
         Ver servicios
         <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
           <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5-5 5M5 12h13" />
@@ -307,8 +307,8 @@ export default function LandingPage() {
   const tabClase = (activa) =>
     `whitespace-nowrap px-1 pb-3 text-sm transition-colors border-b-2 -mb-px ${
       activa
-        ? "font-semibold text-[#111111] dark:text-white border-[#111111] dark:border-white"
-        : "font-medium text-[#787774] dark:text-slate-400 border-transparent hover:text-[#2F3437] dark:hover:text-slate-200"
+        ? "font-semibold text-ink dark:text-white border-ink dark:border-white"
+        : "font-medium text-muted dark:text-slate-400 border-transparent hover:text-ink-2 dark:hover:text-slate-200"
     }`;
 
   return (
@@ -319,31 +319,31 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 pt-20 pb-16 lg:pt-28 lg:pb-20 grid lg:grid-cols-[1fr_380px] gap-12 lg:gap-16 items-center">
           <div className="max-w-2xl">
             <h1
-              className="text-5xl sm:text-6xl font-bold text-[#111111] dark:text-white tracking-tight leading-[1.08] mb-5 animate-fade-in-up"
+              className="text-5xl sm:text-6xl font-bold text-ink dark:text-white tracking-tight leading-[1.08] mb-5 animate-fade-in-up"
               style={{ textWrap: "balance" }}
             >
               Reserva tu próxima cita en{" "}
               <span className="underline-wavy whitespace-nowrap">30 segundos</span>.
             </h1>
-            <p className="text-lg text-[#787774] dark:text-slate-400 leading-relaxed mb-10 animate-fade-in-up delay-100">
+            <p className="text-lg text-muted dark:text-slate-400 leading-relaxed mb-10 animate-fade-in-up delay-100">
               Barberías, salones y centros de estética con agenda online.
               Elige, reserva y recibe la confirmación por correo.
             </p>
 
             {/* Buscador */}
             <div className="relative animate-fade-in-up delay-200">
-              <SearchIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#A8A29E] pointer-events-none" />
+              <SearchIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-faint pointer-events-none" />
               <input
                 type="text"
                 placeholder="Busca por nombre o servicio…"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                className="w-full pl-14 pr-6 py-4 rounded-xl bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 outline-none transition-all text-base text-[#111111] dark:text-white placeholder:text-[#A8A29E]"
+                className="w-full pl-14 pr-6 py-4 rounded-xl bg-white dark:bg-card border border-line dark:border-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 outline-none transition-all text-base text-ink dark:text-white placeholder:text-faint"
               />
             </div>
 
             {/* Cómo funciona — una línea silenciosa */}
-            <p className="mt-8 text-[13px] text-[#A8A29E] dark:text-slate-500 animate-fade-in-up delay-400">
+            <p className="mt-8 text-[13px] text-faint dark:text-slate-500 animate-fade-in-up delay-400">
               Elige barbero, día y hora · Confirmación por correo · Reagenda o cancela online
             </p>
           </div>
@@ -359,57 +359,57 @@ export default function LandingPage() {
             {/* Resplandor ambiental detrás de la viñeta */}
             <div className="absolute -inset-10 -z-10 rounded-full bg-emerald-400/15 dark:bg-emerald-500/10 blur-3xl animate-glow-pulse" />
             <div className="animate-float relative">
-            <div className="bg-white border border-[#EAEAEA] rounded-xl p-6 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+            <div className="bg-white border border-line rounded-xl p-6 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
               {/* Tienda */}
               <div className="flex items-center gap-3 mb-5 pb-5 border-b border-black/5">
                 <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
                   T
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.05em] text-[#787774]">Barbería</p>
-                  <p className="text-[15px] font-semibold text-[#111111] leading-tight">Tenri Barber</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.05em] text-muted">Barbería</p>
+                  <p className="text-[15px] font-semibold text-ink leading-tight">Tenri Barber</p>
                 </div>
                 <span className="ml-auto inline-flex items-center gap-1 text-[13px]">
                   <svg className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M11.48 3.5c.16-.38.88-.38 1.04 0l2.12 5.11 5.51.44c.44.04.62.59.28.88l-4.2 3.6 1.28 5.38c.1.43-.36.77-.74.54L12 16.56l-4.77 2.9c-.38.23-.84-.11-.74-.54l1.28-5.39-4.2-3.59a.47.47 0 0 1 .28-.88l5.51-.44 2.12-5.1z" />
                   </svg>
-                  <span className="font-semibold text-[#111111] tabular">4,8</span>
+                  <span className="font-semibold text-ink tabular">4,8</span>
                 </span>
               </div>
 
               {/* Servicio */}
               <div className="flex items-baseline justify-between mb-4">
-                <p className="text-sm font-semibold text-[#111111]">Corte de Pelo Senior</p>
-                <p className="text-xs text-[#787774] tabular">45 min · $12.000</p>
+                <p className="text-sm font-semibold text-ink">Corte de Pelo Senior</p>
+                <p className="text-xs text-muted tabular">45 min · $12.000</p>
               </div>
 
               {/* Horarios */}
-              <p className="text-[10px] font-bold uppercase tracking-[0.05em] text-[#787774] mb-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.05em] text-muted mb-2">
                 Horarios disponibles
               </p>
               <div className="grid grid-cols-3 gap-2">
-                <span className="py-2.5 rounded-lg border border-[#EAEAEA] bg-white text-[#2F3437] text-center text-sm font-medium font-mono tabular">
+                <span className="py-2.5 rounded-lg border border-line bg-white text-ink-2 text-center text-sm font-medium font-mono tabular">
                   10:00
                 </span>
                 <span className="anim-slot-pick py-2.5 rounded-lg border text-center text-sm font-semibold font-mono tabular">
                   10:30
                 </span>
-                <span className="py-2.5 rounded-lg border border-[#EAEAEA] bg-white text-[#2F3437] text-center text-sm font-medium font-mono tabular">
+                <span className="py-2.5 rounded-lg border border-line bg-white text-ink-2 text-center text-sm font-medium font-mono tabular">
                   11:15
                 </span>
               </div>
             </div>
 
             {/* Toast de confirmación */}
-            <div className="anim-confirm-pop absolute -bottom-7 -left-4 bg-white border border-[#EAEAEA] rounded-xl px-4 py-3 shadow-[0_4px_16px_rgba(0,0,0,0.08)] flex items-center gap-3">
+            <div className="anim-confirm-pop absolute -bottom-7 -left-4 bg-white border border-line rounded-xl px-4 py-3 shadow-[0_4px_16px_rgba(0,0,0,0.08)] flex items-center gap-3">
               <span className="w-8 h-8 rounded-full bg-[#EDF3EC] border border-[#D3E5D2] flex items-center justify-center shrink-0">
                 <svg className="w-4 h-4 text-[#346538]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </span>
               <span>
-                <p className="text-[13px] font-semibold text-[#111111] leading-tight">Cita confirmada</p>
-                <p className="text-[11px] text-[#787774] tabular">mié 26 · 10:30 — Corte Senior</p>
+                <p className="text-[13px] font-semibold text-ink leading-tight">Cita confirmada</p>
+                <p className="text-[11px] text-muted tabular">mié 26 · 10:30 — Corte Senior</p>
               </span>
             </div>
             </div>
@@ -419,9 +419,9 @@ export default function LandingPage() {
 
       {/* ============= DIRECTORIO ============= */}
       <section className="max-w-6xl mx-auto px-6 pb-24 w-full">
-        <div className="pt-8 border-t border-[#EAEAEA] dark:border-slate-800/60">
+        <div className="pt-8 border-t border-line dark:border-slate-800/60">
           <div className="flex items-baseline justify-between gap-4 mb-6">
-            <h2 className="text-xl font-semibold text-[#111111] dark:text-white tracking-tight">
+            <h2 className="text-xl font-semibold text-ink dark:text-white tracking-tight">
               {busqueda
                 ? `Resultados para "${busqueda}"`
                 : ubicacion
@@ -429,7 +429,7 @@ export default function LandingPage() {
                 : "Explora las tiendas"}
             </h2>
             {!cargando && (
-              <p className="text-sm text-[#A8A29E] font-medium tabular shrink-0">
+              <p className="text-sm text-faint font-medium tabular shrink-0">
                 {busqueda || filtroRubro || ubicacion
                   ? `${barberiasFiltradas.length} ${barberiasFiltradas.length === 1 ? "resultado" : "resultados"}`
                   : `${paginacion.total} ${paginacion.total === 1 ? "tienda" : "tiendas"}`}
@@ -438,7 +438,7 @@ export default function LandingPage() {
           </div>
 
           {/* Barra de filtros: tabs de rubro + "Cerca de mí" */}
-          <div className="flex items-end justify-between gap-4 border-b border-[#EAEAEA] dark:border-slate-800/60 mb-8">
+          <div className="flex items-end justify-between gap-4 border-b border-line dark:border-slate-800/60 mb-8">
             <nav className="flex items-center gap-5 overflow-x-auto no-scrollbar" aria-label="Filtrar por tipo de local">
               <button onClick={() => setFiltroRubro("")} className={tabClase(!filtroRubro)}>
                 Todas
@@ -460,7 +460,7 @@ export default function LandingPage() {
               className={`shrink-0 mb-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-60 ${
                 ubicacion
                   ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-400"
-                  : "bg-white dark:bg-[#0B1221] border-[#EAEAEA] dark:border-slate-800 text-[#787774] dark:text-slate-400 hover:text-emerald-700 hover:border-emerald-200 dark:hover:text-emerald-400"
+                  : "bg-white dark:bg-card border-line dark:border-slate-800 text-muted dark:text-slate-400 hover:text-emerald-700 hover:border-emerald-200 dark:hover:text-emerald-400"
               }`}
             >
               {buscandoUbicacion ? (
@@ -482,15 +482,15 @@ export default function LandingPage() {
           </div>
         ) : errorCarga && barberias.length === 0 ? (
           <div className="text-center py-24 animate-fade-in-up">
-            <h3 className="text-2xl font-semibold text-[#111111] dark:text-white mb-2">
+            <h3 className="text-2xl font-semibold text-ink dark:text-white mb-2">
               No pudimos cargar el directorio
             </h3>
-            <p className="text-[#787774] dark:text-slate-400 max-w-md mx-auto mb-6">
+            <p className="text-muted dark:text-slate-400 max-w-md mx-auto mb-6">
               Hubo un problema de conexión. Inténtalo de nuevo en unos segundos.
             </p>
             <button
               onClick={() => cargarPagina(1)}
-              className="px-7 py-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white dark:text-[#03070e] font-bold text-sm transition-colors active:scale-[0.98]"
+              className="px-7 py-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white dark:text-abyss font-bold text-sm transition-colors active:scale-[0.98]"
             >
               Reintentar
             </button>
@@ -502,31 +502,31 @@ export default function LandingPage() {
               // el auto-load se detiene: sin este retry el "Buscando…" quedaba
               // pegado para siempre.
               <>
-                <p className="text-[#787774] dark:text-slate-400 mb-6">
+                <p className="text-muted dark:text-slate-400 mb-6">
                   No pudimos revisar todas las tiendas por un problema de conexión.
                 </p>
                 <button
                   onClick={cargarMas}
-                  className="px-7 py-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white dark:text-[#03070e] font-bold text-sm transition-colors active:scale-[0.98]"
+                  className="px-7 py-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white dark:text-abyss font-bold text-sm transition-colors active:scale-[0.98]"
                 >
                   Reintentar
                 </button>
               </>
             ) : (
-              <p className="text-[#787774] dark:text-slate-400">
+              <p className="text-muted dark:text-slate-400">
                 Buscando en todas las tiendas…
               </p>
             )}
           </div>
         ) : barberiasFiltradas.length === 0 ? (
           <div className="text-center py-24 animate-fade-in-up">
-            <div className="w-14 h-14 mx-auto bg-[#F7F6F3] dark:bg-[#0B1221] rounded-xl flex items-center justify-center mb-5 border border-[#EAEAEA] dark:border-slate-800">
-              <SearchIcon className="w-6 h-6 text-[#A8A29E]" />
+            <div className="w-14 h-14 mx-auto bg-paper dark:bg-card rounded-xl flex items-center justify-center mb-5 border border-line dark:border-slate-800">
+              <SearchIcon className="w-6 h-6 text-faint" />
             </div>
-            <h3 className="text-2xl font-semibold text-[#111111] dark:text-white mb-2">
+            <h3 className="text-2xl font-semibold text-ink dark:text-white mb-2">
               No encontramos tiendas
             </h3>
-            <p className="text-[#787774] dark:text-slate-400 max-w-md mx-auto">
+            <p className="text-muted dark:text-slate-400 max-w-md mx-auto">
               {busqueda
                 ? `No hay resultados para "${busqueda}". Prueba con otro término.`
                 : filtroRubro
@@ -561,13 +561,13 @@ export default function LandingPage() {
                 <button
                   onClick={cargarMas}
                   disabled={cargandoMas}
-                  className="inline-flex items-center gap-2 px-7 py-3 rounded-lg border border-[#EAEAEA] dark:border-slate-700 bg-white dark:bg-[#0B1221] text-[#2F3437] dark:text-slate-300 font-semibold text-sm hover:border-[#C9C7C1] dark:hover:border-slate-600 active:scale-[0.98] transition-all"
+                  className="inline-flex items-center gap-2 px-7 py-3 rounded-lg border border-line dark:border-slate-700 bg-white dark:bg-card text-ink-2 dark:text-slate-300 font-semibold text-sm hover:border-[#C9C7C1] dark:hover:border-slate-600 active:scale-[0.98] transition-all"
                 >
                   {cargandoMas && (
                     <span className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
                   )}
                   Mostrar más tiendas
-                  <span className="text-[#A8A29E] font-normal tabular">
+                  <span className="text-faint font-normal tabular">
                     ({barberias.length} de {paginacion.total})
                   </span>
                 </button>

@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import useApiMutation from "../hooks/useApiMutation";
 import ConfirmModal from "./ConfirmModal";
 import { parseApiErrorSync } from "../utils/parseApiError";
+import { SearchIcon } from "./Icons";
 
 // ============================================================
 // 👥 USUARIOS TAB — Pack 3
@@ -17,7 +18,7 @@ const BADGE_ROL = {
   superadmin: "bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400",
   admin:      "bg-amber-100  dark:bg-amber-500/10  text-amber-700  dark:text-amber-400",
   barbero:    "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-  cliente:    "bg-[#F7F6F3]  dark:bg-slate-500/10  text-[#2F3437]  dark:text-slate-400",
+  cliente:    "bg-paper  dark:bg-slate-500/10  text-ink-2  dark:text-slate-400",
 };
 
 export default function UsuariosTab({ usuarios = [], cargando, onRefetch }) {
@@ -83,7 +84,7 @@ export default function UsuariosTab({ usuarios = [], cargando, onRefetch }) {
     return (
       <div className="space-y-3 mt-4">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-14 rounded-xl bg-[#F7F6F3] dark:bg-slate-800/50 animate-pulse" />
+          <div key={i} className="h-16 rounded-xl bg-paper dark:bg-slate-800/50 shimmer" />
         ))}
       </div>
     );
@@ -93,18 +94,21 @@ export default function UsuariosTab({ usuarios = [], cargando, onRefetch }) {
     <div className="mt-4 space-y-4">
 
       {/* ── Filtros ── */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <input
-          type="text"
-          value={buscar}
-          onChange={(e) => setBuscar(e.target.value)}
-          placeholder="Buscar por nombre o email..."
-          className="flex-1 bg-white dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500/50 transition-colors"
-        />
+      <div className="flex flex-col sm:flex-row gap-3 animate-fade-in-up">
+        <div className="relative flex-1">
+          <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-faint pointer-events-none" />
+          <input
+            type="text"
+            value={buscar}
+            onChange={(e) => setBuscar(e.target.value)}
+            placeholder="Buscar por nombre o email..."
+            className="w-full bg-white dark:bg-abyss border border-line dark:border-slate-800 rounded-xl pl-11 pr-4 py-2.5 text-sm outline-none focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/15 transition-all"
+          />
+        </div>
         <select
           value={filtroRol}
           onChange={(e) => setFiltroRol(e.target.value)}
-          className="bg-white dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500/50 transition-colors"
+          className="bg-white dark:bg-abyss border border-line dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/15 transition-all"
         >
           <option value="">Todos los roles</option>
           {ROLES.map((r) => (
@@ -114,26 +118,27 @@ export default function UsuariosTab({ usuarios = [], cargando, onRefetch }) {
       </div>
 
       {/* ── Contador ── */}
-      <p className="text-xs text-[#A8A29E]">
+      <p className="text-xs text-faint">
         {usuariosFiltrados.length} usuario{usuariosFiltrados.length !== 1 ? "s" : ""}
         {buscar || filtroRol ? " (filtrados)" : " en total"}
       </p>
 
       {/* ── Lista ── */}
       {usuariosFiltrados.length === 0 ? (
-        <div className="text-center py-12 text-[#A8A29E] text-sm">
+        <div className="text-center py-12 text-faint text-sm">
           No se encontraron usuarios con ese criterio.
         </div>
       ) : (
         <div className="space-y-2">
-          {usuariosFiltrados.map((u) => (
+          {usuariosFiltrados.map((u, idx) => (
             <div
               key={u.id}
-              className={`bg-white dark:bg-[#0B1221] border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 transition-all ${
+              className={`animate-fade-in-up bg-white dark:bg-card border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 transition-all ${
                 u.suspendido
                   ? "border-rose-200 dark:border-rose-500/20 opacity-60"
-                  : "border-[#EAEAEA] dark:border-slate-800/60"
+                  : "border-line dark:border-slate-800/60 hover:border-line-strong dark:hover:border-slate-700"
               }`}
+              style={{ animationDelay: `${Math.min(idx, 8) * 40}ms` }}
             >
               {/* Avatar */}
               <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden">
@@ -146,10 +151,10 @@ export default function UsuariosTab({ usuarios = [], cargando, onRefetch }) {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-[#111111] dark:text-white text-sm truncate">{u.name}</p>
-                <p className="text-xs text-[#A8A29E] truncate">{u.email}</p>
+                <p className="font-semibold text-ink dark:text-white text-sm truncate">{u.name}</p>
+                <p className="text-xs text-faint truncate">{u.email}</p>
                 {u.barberia && (
-                  <p className="text-xs text-[#A8A29E] truncate">📍 {u.barberia.nombre}</p>
+                  <p className="text-xs text-faint truncate">📍 {u.barberia.nombre}</p>
                 )}
               </div>
 
@@ -166,7 +171,7 @@ export default function UsuariosTab({ usuarios = [], cargando, onRefetch }) {
                   value={u.rol}
                   onChange={(e) => handleCambiarRol(u.id, e.target.value)}
                   disabled={ejecutando}
-                  className="text-xs bg-[#FBFBFA] dark:bg-slate-800 border border-[#EAEAEA] dark:border-slate-700 rounded-lg px-2 py-1.5 outline-none disabled:opacity-50"
+                  className="text-xs bg-paper-2 dark:bg-slate-800 border border-line dark:border-slate-700 rounded-lg px-2 py-1.5 outline-none disabled:opacity-50"
                 >
                   {ROLES.map((r) => (
                     <option key={r} value={r}>{r}</option>

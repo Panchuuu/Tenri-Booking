@@ -10,6 +10,33 @@
 @variant dark (&:where(.dark, .dark *));
 
 /* ============================================================
+   🎨 TOKENS → UTILIDADES (Tailwind v4 @theme)
+   ============================================================
+   Genera utilidades como text-ink, text-muted, bg-paper,
+   border-line, dark:bg-card — para dejar de repetir hex en JSX.
+   Misma paleta que los tokens de :root de más abajo. */
+@theme {
+  /* Neutros de texto (light) */
+  --color-ink:    #111111;
+  --color-ink-2:  #2F3437;
+  --color-muted:  #787774;
+  --color-faint:  #A8A29E;
+
+  /* Superficies y líneas (light) */
+  --color-paper:   #F7F6F3;
+  --color-paper-2: #FBFBFA;
+  --color-line:    #EAEAEA;
+  --color-line-strong: #DBDBD8;
+
+  /* Superficies dark */
+  --color-night:   #050810;
+  --color-night-2: #080d18;
+  --color-card:    #0B1221;
+  --color-card-2:  #0e1729;
+  --color-abyss:   #03070e; /* el negro más profundo — texto sobre esmeralda en dark */
+}
+
+/* ============================================================
    🎯 DESIGN TOKENS
    ============================================================ */
 :root {
@@ -349,6 +376,13 @@ input, textarea, select {
 
 /* Number variant para precios */
 .tabular { font-variant-numeric: tabular-nums; }
+
+/* Texto fantasma de contorno — para numerales gigantes (404) */
+.text-stroke {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--border-strong);
+}
+.dark .text-stroke { -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.14); }
 
 /* Smooth page transitions (cuando navegas entre rutas) */
 .page-transition {

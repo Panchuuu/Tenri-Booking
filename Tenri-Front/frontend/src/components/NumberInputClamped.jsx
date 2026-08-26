@@ -103,8 +103,8 @@ export default function NumberInputClamped({
   };
 
   const baseClasses =
-    "w-full bg-[#FBFBFA] dark:bg-[#03070e] border border-[#EAEAEA] dark:border-slate-800 " +
-    "rounded-xl p-3 text-sm text-[#111111] dark:text-slate-200 outline-none " +
+    "w-full bg-paper-2 dark:bg-abyss border border-line dark:border-slate-800 " +
+    "rounded-xl p-3 text-sm text-ink dark:text-slate-200 outline-none " +
     "focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all tabular";
 
   return (
@@ -112,7 +112,7 @@ export default function NumberInputClamped({
       {label && (
         <label
           htmlFor={id}
-          className="text-xs font-bold text-[#787774] uppercase tracking-wider mb-2 block"
+          className="text-xs font-bold text-muted uppercase tracking-wider mb-2 block"
         >
           {label}
         </label>
@@ -137,7 +137,7 @@ export default function NumberInputClamped({
         />
         {suffix && (
           <span
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#A8A29E] font-mono pointer-events-none"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-faint font-mono pointer-events-none"
             aria-hidden="true"
           >
             {suffix}

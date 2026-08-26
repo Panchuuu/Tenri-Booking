@@ -35,8 +35,8 @@ export default function ConfirmModal({
 
   const colorConfirmar =
     variante === "danger"
-      ? "bg-rose-500 hover:bg-rose-600 dark:hover:bg-rose-400 text-white dark:text-[#03070e]"
-      : "bg-emerald-500 hover:bg-emerald-600 dark:hover:bg-emerald-400 text-white dark:text-[#03070e]";
+      ? "bg-rose-500 hover:bg-rose-600 dark:hover:bg-rose-400 text-white dark:text-abyss"
+      : "bg-emerald-500 hover:bg-emerald-600 dark:hover:bg-emerald-400 text-white dark:text-abyss";
 
   const colorIcono =
     variante === "danger"
@@ -45,11 +45,11 @@ export default function ConfirmModal({
 
   return (
     <div
-      className={`fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/50 dark:bg-[#03070e]/80 backdrop-blur-sm p-4 ${cerrandose ? "animate-fade-out" : "animate-fade-in"}`}
+      className={`fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/50 dark:bg-abyss/80 backdrop-blur-sm p-4 ${cerrandose ? "animate-fade-out" : "animate-fade-in"}`}
       onClick={cargando || cerrandose ? undefined : onCancelar}
     >
       <div
-        className={`bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl ${cerrandose ? "animate-scale-out" : "animate-scale-in"}`}
+        className={`bg-white dark:bg-card border border-line dark:border-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl ${cerrandose ? "animate-scale-out" : "animate-scale-in"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-4 mb-4">
@@ -59,16 +59,16 @@ export default function ConfirmModal({
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-[#111111] dark:text-white">{titulo}</h3>
+          <h3 className="text-lg font-bold text-ink dark:text-white">{titulo}</h3>
         </div>
 
-        <p className="text-sm text-[#2F3437] dark:text-slate-400 mb-8 pl-14">{mensaje}</p>
+        <p className="text-sm text-ink-2 dark:text-slate-400 mb-8 pl-14">{mensaje}</p>
 
         <div className="flex gap-3 justify-end">
           <button
             onClick={onCancelar}
             disabled={cargando}
-            className="px-5 py-2.5 text-sm font-semibold text-[#2F3437] dark:text-slate-400 hover:text-[#111111] dark:hover:text-white hover:bg-[#F7F6F3] dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent rounded-lg transition-colors"
+            className="px-5 py-2.5 text-sm font-semibold text-ink-2 dark:text-slate-400 hover:text-ink dark:hover:text-white hover:bg-paper dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent rounded-lg transition-colors"
           >
             {textoCancelar}
           </button>
