@@ -38,5 +38,13 @@ if (file_exists($maintenance = $backendPath . '/storage/framework/maintenance.ph
 
 require $backendPath . '/vendor/autoload.php';
 
+// Este front-controller vive en /api/, así que Symfony detectaría "/api"
+// como base path y lo recortaría de la URI: el router recibiría "/rubros"
+// en vez de "/api/rubros" y ninguna ruta (prefijo "api") calzaría.
+// Se normaliza SCRIPT_NAME/PHP_SELF a la raíz para que el base path sea ""
+// y Laravel vea la URI completa.
+$_SERVER['SCRIPT_NAME'] = '/index.php';
+$_SERVER['PHP_SELF']    = '/index.php';
+
 (require_once $backendPath . '/bootstrap/app.php')
     ->handleRequest(Request::capture());
