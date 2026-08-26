@@ -92,6 +92,9 @@ export default function MisReservasPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {citas.map((cita) => {
             const puedeReagendar = cita.estado === "pendiente" || cita.estado === "confirmada";
+            // null si la fecha/hora de la cita no es parseable: en ese caso
+            // ocultamos el bloque de calendario en vez de linkear a "#".
+            const urlCalendario = urlGoogleCalendar(cita);
             return (
               <div key={cita.id} className="bg-white dark:bg-[#0B1221] border border-[#EAEAEA] dark:border-slate-800/60 rounded-xl p-6 shadow-none hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-emerald-500/50 transition-all flex flex-col">
                 <div className="flex justify-between items-start mb-4 gap-3">
@@ -126,9 +129,10 @@ export default function MisReservasPage() {
                   {puedeReagendar && (
                     <>
                       {/* 📅 Agregar al calendario */}
+                      {urlCalendario && (
                       <div className="mt-2 grid grid-cols-2 gap-2">
                         <a
-                          href={urlGoogleCalendar(cita) || "#"}
+                          href={urlCalendario}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-3 py-2 text-center text-[#2F3437] bg-[#FBFBFA] hover:bg-[#F7F6F3] border border-[#EAEAEA] dark:text-slate-300 dark:bg-slate-800/50 dark:hover:bg-slate-800 dark:border-slate-700 font-semibold text-xs rounded-lg transition-colors"
@@ -143,6 +147,7 @@ export default function MisReservasPage() {
                           ⬇️ Apple / Outlook
                         </button>
                       </div>
+                      )}
 
                       <button
                         onClick={() => setCitaAReagendar(cita)}
