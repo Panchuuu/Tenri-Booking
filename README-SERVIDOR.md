@@ -76,9 +76,26 @@ cd ~/domains/booking.tenri.cl/booking_backend && php artisan queue:work --stop-w
 
 > Si ya tenías estos crons apuntando a `~/booking_backend`, edítalos con la ruta nueva.
 
+Auto-deploy del backend (opcional pero recomendado — ver sección siguiente):
+
+```
+cd ~/domains/booking.tenri.cl/booking_backend && if [ -f backend.zip ] && unzip -tqq backend.zip 2>/dev/null; then unzip -o backend.zip && rm backend.zip && php artisan migrate --force && php artisan optimize:clear; fi >> storage/logs/deploy.log 2>&1
+```
+
 ## Cada deploy futuro
 
-Tras cada push a `main` con el pipeline en verde, solo esto:
+Con el cron de auto-deploy configurado, **no hay que hacer nada**: tras cada
+push a `main` con el pipeline en verde, el cron detecta el `backend.zip`
+nuevo (revisa cada minuto), lo descomprime, migra y limpia caché solo.
+El resultado queda en `storage/logs/deploy.log`.
+
+- El `unzip -tqq` valida la integridad del zip antes de tocar nada: si el
+  cron se dispara mientras el FTP aún está subiendo el archivo, el test
+  falla (el índice del zip va al final) y lo reintenta al minuto siguiente.
+- El log no se pierde entre deploys: el pipeline excluye `storage/logs/*`
+  del zip.
+
+Sin el cron, el manual de siempre:
 
 ```bash
 cd ~/domains/booking.tenri.cl/booking_backend

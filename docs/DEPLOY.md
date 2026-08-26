@@ -82,13 +82,17 @@ cd ~/domains/booking.tenri.cl/booking_backend && php artisan queue:work --stop-w
 > auto-omite con `APP_ENV=production`, pero no lo invoques. El primer
 > superadmin créalo a mano (tinker o INSERT con password hasheada).
 
-## Cada deploy (automático + 2 comandos)
+## Cada deploy (automático)
 
 Al hacer push a `main`, GitHub Actions corre los tests y, si pasan, sube por FTP:
 - el build del frontend (incluye `.htaccess` y `api/`) → `domains/booking.tenri.cl/public_html/`
 - `backend.zip` (sin `.env`, sin tests) → `domains/booking.tenri.cl/booking_backend/`
 
-Luego, por SSH / Terminal de DirectAdmin:
+El frontend queda live al instante. El backend lo aplica solo el cron de
+auto-deploy (ver `README-SERVIDOR.md` → Cron Jobs): detecta el `backend.zip`,
+lo descomprime, migra y limpia caché; log en `storage/logs/deploy.log`.
+
+Si no configuraste ese cron, hazlo a mano por SSH / Terminal de DirectAdmin:
 
 ```bash
 cd ~/domains/booking.tenri.cl/booking_backend
