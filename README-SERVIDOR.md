@@ -76,7 +76,39 @@ cd ~/domains/booking.tenri.cl/booking_backend && php artisan queue:work --stop-w
 
 > Si ya tenías estos crons apuntando a `~/booking_backend`, edítalos con la ruta nueva.
 
-Auto-deploy del backend (opcional pero recomendado — ver sección siguiente):
+## 3. Auto-deploy del backend (elegir UNA opción)
+
+### Opción A — paso SSH en el pipeline (recomendada, aplica al instante)
+
+El workflow ya trae un paso SSH que se activa solo al configurar los secrets.
+
+1. En el servidor (SSH o Terminal de DirectAdmin), crear una llave dedicada:
+
+```bash
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+ssh-keygen -t ed25519 -f ~/.ssh/github_deploy -N "" -C "github-actions"
+cat ~/.ssh/github_deploy.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+cat ~/.ssh/github_deploy
+```
+
+2. Copiar la salida del último `cat` (la llave privada completa, incluidas las
+   líneas `BEGIN`/`END`) y en GitHub → repo → **Settings → Secrets and
+   variables → Actions** crear:
+
+| Secret | Valor |
+|---|---|
+| `SSH_HOST` | `66.235.169.112` (o el hostname del servidor) |
+| `SSH_USERNAME` | usuario de DirectAdmin (p. ej. `atlasdig`) |
+| `SSH_PRIVATE_KEY` | la llave privada copiada |
+
+3. Listo: el siguiente push a `main` aplica el backend solo. Si el paso falla
+   con timeout de conexión, el hosting bloquea las IPs de GitHub → borra los
+   secrets y usa la Opción B.
+
+### Opción B — cron watcher (si el hosting bloquea SSH externo)
+
+Cron de DirectAdmin cada minuto (aplica con ~1 min de retraso):
 
 ```
 cd ~/domains/booking.tenri.cl/booking_backend && if [ -f backend.zip ] && unzip -tqq backend.zip 2>/dev/null; then unzip -o backend.zip && rm backend.zip && php artisan migrate --force && php artisan optimize:clear; fi >> storage/logs/deploy.log 2>&1
@@ -84,18 +116,17 @@ cd ~/domains/booking.tenri.cl/booking_backend && if [ -f backend.zip ] && unzip 
 
 ## Cada deploy futuro
 
-Con el cron de auto-deploy configurado, **no hay que hacer nada**: tras cada
-push a `main` con el pipeline en verde, el cron detecta el `backend.zip`
-nuevo (revisa cada minuto), lo descomprime, migra y limpia caché solo.
-El resultado queda en `storage/logs/deploy.log`.
+Con la Opción A o B configurada, **no hay que hacer nada**: tras cada push a
+`main` con el pipeline en verde, el backend se aplica solo (al instante con
+SSH; en ~1 min con el cron, log en `storage/logs/deploy.log`).
 
-- El `unzip -tqq` valida la integridad del zip antes de tocar nada: si el
-  cron se dispara mientras el FTP aún está subiendo el archivo, el test
-  falla (el índice del zip va al final) y lo reintenta al minuto siguiente.
-- El log no se pierde entre deploys: el pipeline excluye `storage/logs/*`
-  del zip.
+- En la Opción B, el `unzip -tqq` valida la integridad del zip antes de tocar
+  nada: si el cron se dispara mientras el FTP aún está subiendo el archivo,
+  el test falla (el índice del zip va al final) y reintenta al minuto
+  siguiente. El log sobrevive los deploys (el pipeline excluye
+  `storage/logs/*` del zip).
 
-Sin el cron, el manual de siempre:
+Sin ninguna de las dos, el manual de siempre:
 
 ```bash
 cd ~/domains/booking.tenri.cl/booking_backend

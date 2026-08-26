@@ -82,6 +82,11 @@ jobs:
     needs: [test-backend, test-frontend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
+    # Si estos secrets existen, el paso SSH aplica el backend solo
+    # (unzip + migrate). Sin ellos, el paso se salta y queda el aviso manual.
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -154,8 +159,27 @@ jobs:
           local-dir: ./_deploy/
           server-dir: domains/booking.tenri.cl/booking_backend/
 
+      # ── Servidor: aplicar backend por SSH ─────
+      # Solo corre si los secrets SSH_* están configurados en el repo.
+      - name: 🛠️ Aplicar backend en el servidor (SSH)
+        if: env.SSH_HOST != ''
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            set -e
+            cd ~/domains/booking.tenri.cl/booking_backend
+            unzip -o backend.zip && rm backend.zip
+            php artisan migrate --force
+            php artisan optimize:clear
+            echo "✅ Backend aplicado: $(date)"
+
       # ── Notificar deploy completado ───────────
       - name: ✅ Deploy de archivos completado
+        if: env.SSH_HOST == ''
         run: |
           echo "✅ Frontend y backend subidos via FTP (DirectAdmin)"
           echo "⚠️ Ejecuta en el servidor (SSH o terminal de DirectAdmin):"
