@@ -62,6 +62,27 @@ class BarberoController extends Controller
         // y los horarios son consistentes.
         $usuario = User::where('email', $request->email)->firstOrFail();
 
+        // 🔒 Reglas de reclutamiento: solo se puede sumar al equipo a un
+        // cliente, o re-asignar a un barbero que YA es de esta barbería
+        // (actualiza sus horarios). Sin esto, un admin podía "capturar"
+        // por email a admins de otros negocios (dejándolos sin panel),
+        // robarse barberos de la competencia o degradar a un superadmin.
+        $esCliente  = $usuario->rol === 'cliente';
+        $esMiBarbero = $usuario->rol === 'barbero'
+            && $usuario->barberia_id === $request->user()->barberia_id;
+
+        if (!$esCliente && !$esMiBarbero) {
+            return response()->json([
+                'error' => 'Ese usuario no está disponible para unirse a tu equipo.',
+            ], 422);
+        }
+
+        if ($usuario->suspendido) {
+            return response()->json([
+                'error' => 'Ese usuario está suspendido y no puede unirse a tu equipo.',
+            ], 422);
+        }
+
         $usuario->rol         = 'barbero';
         $usuario->barberia_id = $request->user()->barberia_id;
 
@@ -79,6 +100,13 @@ class BarberoController extends Controller
 
         if ($usuario->barberia_id !== $request->user()->barberia_id) {
             return response()->json(['error' => 'No tienes permiso sobre este barbero.'], 403);
+        }
+
+        // 🔒 Este endpoint gestiona BARBEROS. Sin el check, un admin podía
+        // editar (o abajo, degradar a cliente) a otro admin de su misma
+        // barbería, o a sí mismo, vía un request directo.
+        if ($usuario->rol !== 'barbero') {
+            return response()->json(['error' => 'Solo puedes gestionar cuentas de barberos.'], 403);
         }
 
         if ($request->filled('name'))        $usuario->name        = $request->name;
@@ -121,6 +149,11 @@ class BarberoController extends Controller
 
         if ($usuario->barberia_id !== $request->user()->barberia_id) {
             return response()->json(['error' => 'No tienes permiso.'], 403);
+        }
+
+        // 🔒 Mismo guard que update(): remover solo aplica a barberos.
+        if ($usuario->rol !== 'barbero') {
+            return response()->json(['error' => 'Solo puedes gestionar cuentas de barberos.'], 403);
         }
 
         // Buscamos citas activas (no finalizadas ni canceladas) del barbero

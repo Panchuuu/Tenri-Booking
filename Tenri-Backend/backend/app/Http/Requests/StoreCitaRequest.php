@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Servicio;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Validation\Rule;
@@ -46,6 +47,22 @@ class StoreCitaRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            // 🔒 La cita debe empezar en el futuro. after_or_equal:today solo
+            // valida la FECHA: sin este check, un POST directo podía reservar
+            // hoy a una hora ya pasada (la agenda es hora de Chile).
+            if ($this->fecha && $this->hora && !$validator->errors()->hasAny(['fecha', 'hora'])) {
+                try {
+                    // parse (no createFromFormat): la regla `date` acepta
+                    // formatos flexibles y el check debe cubrirlos todos.
+                    $inicio = Carbon::parse("{$this->fecha} {$this->hora}", 'America/Santiago');
+                    if ($inicio->lt(Carbon::now('America/Santiago'))) {
+                        $validator->errors()->add('hora', 'Ese horario ya pasó. Elige una hora futura.');
+                    }
+                } catch (\Throwable $e) {
+                    // fecha/hora con formato raro: ya lo reportan las reglas base.
+                }
+            }
+
             if (!$this->servicio_id || !$this->barbero_id) {
                 return;
             }

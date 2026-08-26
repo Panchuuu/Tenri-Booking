@@ -65,7 +65,14 @@ class BarberiaController extends Controller
             $rutaLogo = $request->file('logo')->store('logos_barberias', 'public');
         }
 
-        $slug = Str::slug($request->nombre_barberia);
+        // 🔒 Slug único: el unique de `nombre` no basta — "Barbería VIP" y
+        // "Barberia-VIP" son nombres distintos pero colapsan al mismo slug,
+        // y el slug es la URL pública (showPorSlug devolvería la equivocada).
+        $slugBase = Str::slug($request->nombre_barberia) ?: 'tienda';
+        $slug = $slugBase;
+        for ($i = 2; Barberia::where('slug', $slug)->exists(); $i++) {
+            $slug = "{$slugBase}-{$i}";
+        }
 
         $barberia = Barberia::create([
             'nombre'          => $request->nombre_barberia,

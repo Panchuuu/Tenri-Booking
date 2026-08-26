@@ -103,4 +103,31 @@ class SuperAdminTest extends TestCase
         $response->assertStatus(201);
         $this->assertDatabaseHas('barberias', ['nombre' => 'Barbería Test']);
     }
+
+    public function test_nombres_distintos_con_mismo_slug_no_colisionan(): void
+    {
+        $superadmin = User::factory()->superadmin()->create();
+
+        // "Barbería VIP" y "Barberia-VIP" son nombres distintos (pasan el
+        // unique de nombre) pero normalizan al mismo slug "barberia-vip",
+        // que es la URL pública de la tienda.
+        $this->actingAs($superadmin)->postJson('/api/barberias', [
+            'nombre_barberia' => 'Barbería VIP',
+            'color_principal' => '#10b981',
+            'admin_nombre'    => 'Admin Uno',
+            'admin_email'     => 'admin.uno@test.cl',
+            'admin_password'  => 'Admin1234',
+        ])->assertStatus(201);
+
+        $this->actingAs($superadmin)->postJson('/api/barberias', [
+            'nombre_barberia' => 'Barberia-VIP',
+            'color_principal' => '#f59e0b',
+            'admin_nombre'    => 'Admin Dos',
+            'admin_email'     => 'admin.dos@test.cl',
+            'admin_password'  => 'Admin1234',
+        ])->assertStatus(201);
+
+        $this->assertDatabaseHas('barberias', ['slug' => 'barberia-vip']);
+        $this->assertDatabaseHas('barberias', ['slug' => 'barberia-vip-2']);
+    }
 }

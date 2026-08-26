@@ -274,4 +274,38 @@ class CitaTest extends TestCase
 
         $response->assertStatus(401);
     }
+
+    public function test_no_se_puede_reservar_en_horario_ya_pasado(): void
+    {
+        [$barberia, $barbero, $servicio, $cliente] = $this->setupBarberia();
+
+        // Hoy (hora de Chile) a las 00:00: la fecha pasa after_or_equal:today
+        // pero la hora ya transcurrió. Antes el backend lo aceptaba.
+        $this->actingAs($cliente)->postJson('/api/citas', [
+            'barbero_id'  => $barbero->id,
+            'servicio_id' => $servicio->id,
+            'fecha'       => now('America/Santiago')->format('Y-m-d'),
+            'hora'        => '00:00',
+        ])->assertStatus(422);
+    }
+
+    public function test_reagendar_rechaza_horario_ya_pasado(): void
+    {
+        [$barberia, $barbero, $servicio, $cliente] = $this->setupBarberia();
+
+        $cita = Cita::factory()->create([
+            'barberia_id' => $barberia->id,
+            'barbero_id'  => $barbero->id,
+            'servicio_id' => $servicio->id,
+            'cliente_id'  => $cliente->id,
+            'fecha'       => now()->addDays(3)->format('Y-m-d'),
+            'hora'        => '10:00',
+            'estado'      => 'confirmada',
+        ]);
+
+        $this->actingAs($cliente)->patchJson("/api/citas/{$cita->id}/reagendar", [
+            'fecha' => now('America/Santiago')->format('Y-m-d'),
+            'hora'  => '00:00',
+        ])->assertStatus(422);
+    }
 }

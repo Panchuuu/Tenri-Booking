@@ -151,4 +151,63 @@ class AgendaTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    public function test_reactivar_cancelada_es_rechazado_si_el_horario_fue_tomado(): void
+    {
+        [$barberia, $admin, $barbero, $servicio, $cliente] = $this->setupCompleto();
+        $fecha = now()->addDays(3)->format('Y-m-d');
+
+        $cancelada = Cita::factory()->create([
+            'barberia_id' => $barberia->id,
+            'barbero_id'  => $barbero->id,
+            'servicio_id' => $servicio->id,
+            'cliente_id'  => $cliente->id,
+            'fecha'       => $fecha,
+            'hora'        => '10:00',
+            'estado'      => 'cancelada',
+        ]);
+
+        // Al cancelarse, el hueco se liberó y otro cliente lo tomó.
+        Cita::factory()->create([
+            'barberia_id' => $barberia->id,
+            'barbero_id'  => $barbero->id,
+            'servicio_id' => $servicio->id,
+            'fecha'       => $fecha,
+            'hora'        => '10:00',
+            'estado'      => 'confirmada',
+        ]);
+
+        $this->actingAs($admin)
+             ->patchJson("/api/citas/{$cancelada->id}/estado", ['estado' => 'confirmada'])
+             ->assertStatus(409);
+
+        $this->assertDatabaseHas('citas', [
+            'id'     => $cancelada->id,
+            'estado' => 'cancelada',
+        ]);
+    }
+
+    public function test_reactivar_cancelada_funciona_si_el_hueco_sigue_libre(): void
+    {
+        [$barberia, $admin, $barbero, $servicio, $cliente] = $this->setupCompleto();
+
+        $cancelada = Cita::factory()->create([
+            'barberia_id' => $barberia->id,
+            'barbero_id'  => $barbero->id,
+            'servicio_id' => $servicio->id,
+            'cliente_id'  => $cliente->id,
+            'fecha'       => now()->addDays(3)->format('Y-m-d'),
+            'hora'        => '10:00',
+            'estado'      => 'cancelada',
+        ]);
+
+        $this->actingAs($admin)
+             ->patchJson("/api/citas/{$cancelada->id}/estado", ['estado' => 'confirmada'])
+             ->assertStatus(200);
+
+        $this->assertDatabaseHas('citas', [
+            'id'     => $cancelada->id,
+            'estado' => 'confirmada',
+        ]);
+    }
 }

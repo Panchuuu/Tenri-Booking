@@ -233,6 +233,17 @@ class CitaController extends Controller
             return response()->json(['error' => 'Esta cita ya no se puede modificar.'], 400);
         }
 
+        // 🔒 Igual que en store(): after_or_equal:today solo valida la FECHA,
+        // sin esto se podía reagendar a hoy a una hora ya pasada.
+        try {
+            $inicioSolicitado = Carbon::parse("{$request->fecha} {$request->hora}", 'America/Santiago');
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'La fecha u hora no tienen un formato válido.'], 422);
+        }
+        if ($inicioSolicitado->lt(Carbon::now('America/Santiago'))) {
+            return response()->json(['error' => 'Ese horario ya pasó. Elige una hora futura.'], 422);
+        }
+
         // Bloqueos
         $tieneBloqueo = BloqueoHorario::where('barbero_id', $cita->barbero_id)
             ->activoEnFecha($request->fecha)->exists();
@@ -327,6 +338,28 @@ class CitaController extends Controller
             // No re-modificar finalizadas
             if (in_array($cita->estado, ['finalizada', 'cancelada'])) {
                 return response()->json(['error' => 'Esta cita ya no se puede modificar.'], 400);
+            }
+        }
+
+        // 🔒 Revivir una cancelada la devuelve a la agenda: el hueco pudo
+        // haberse reservado (una cancelación libera el horario) o el barbero
+        // pudo quedar bloqueado. Sin este check, el admin creaba un solape.
+        if ($cita->estado === 'cancelada' && in_array($request->estado, ['pendiente', 'confirmada'])) {
+            $cita->loadMissing('servicio');
+            $fecha = is_string($cita->fecha) ? $cita->fecha : Carbon::parse($cita->fecha)->toDateString();
+
+            if (BloqueoHorario::where('barbero_id', $cita->barbero_id)->activoEnFecha($fecha)->exists()) {
+                return response()->json([
+                    'error' => 'No puedes reactivar esta cita: el barbero tiene esa fecha bloqueada.',
+                ], 409);
+            }
+
+            $inicio = Carbon::parse($cita->hora);
+            $fin    = $inicio->copy()->addMinutes($cita->servicio->duracion ?? 30);
+            if ($this->haySolape($cita->barbero_id, $fecha, $inicio, $fin, $cita->id)) {
+                return response()->json([
+                    'error' => 'No puedes reactivar esta cita: el horario ya fue tomado por otra reserva.',
+                ], 409);
             }
         }
 

@@ -148,6 +148,100 @@ class BarberiaAdminTest extends TestCase
         $response->assertStatus(403);
     }
 
+    public function test_admin_no_puede_reclutar_a_admin_de_otra_barberia(): void
+    {
+        [$admin] = $this->crearAdminConBarberia();
+        $otraBarberia = Barberia::factory()->create();
+        $otroAdmin    = User::factory()->admin($otraBarberia->id)->create([
+            'email' => 'otro.admin@gmail.com',
+        ]);
+
+        // Antes esto "capturaba" al admin rival: perdía su rol y su panel.
+        $this->actingAs($admin)
+             ->postJson('/api/barberos/asignar', ['email' => $otroAdmin->email])
+             ->assertStatus(422);
+
+        $this->assertDatabaseHas('users', [
+            'id'          => $otroAdmin->id,
+            'rol'         => 'admin',
+            'barberia_id' => $otraBarberia->id,
+        ]);
+    }
+
+    public function test_admin_no_puede_reclutar_a_un_superadmin(): void
+    {
+        [$admin] = $this->crearAdminConBarberia();
+        $superadmin = User::factory()->superadmin()->create([
+            'email' => 'super.tenri@gmail.com',
+        ]);
+
+        $this->actingAs($admin)
+             ->postJson('/api/barberos/asignar', ['email' => $superadmin->email])
+             ->assertStatus(422);
+
+        $this->assertDatabaseHas('users', [
+            'id'  => $superadmin->id,
+            'rol' => 'superadmin',
+        ]);
+    }
+
+    public function test_admin_no_puede_robarse_barbero_de_otra_barberia(): void
+    {
+        [$admin] = $this->crearAdminConBarberia();
+        $otraBarberia = Barberia::factory()->create();
+        $barberoAjeno = User::factory()->barbero($otraBarberia->id)->create([
+            'email' => 'barbero.ajeno@gmail.com',
+        ]);
+
+        $this->actingAs($admin)
+             ->postJson('/api/barberos/asignar', ['email' => $barberoAjeno->email])
+             ->assertStatus(422);
+
+        $this->assertDatabaseHas('users', [
+            'id'          => $barberoAjeno->id,
+            'barberia_id' => $otraBarberia->id,
+        ]);
+    }
+
+    public function test_asignar_actualiza_horario_de_barbero_propio(): void
+    {
+        [$admin, $barberia] = $this->crearAdminConBarberia();
+        $barbero = User::factory()->barbero($barberia->id)->create([
+            'email' => 'mi.barbero@gmail.com',
+        ]);
+
+        // Re-asignar a un barbero propio es válido: actualiza sus horarios.
+        $this->actingAs($admin)
+             ->postJson('/api/barberos/asignar', [
+                 'email'       => $barbero->email,
+                 'hora_inicio' => '08:00',
+                 'hora_fin'    => '17:00',
+             ])
+             ->assertStatus(200);
+
+        $this->assertDatabaseHas('users', [
+            'id'          => $barbero->id,
+            'hora_inicio' => '08:00',
+            'hora_fin'    => '17:00',
+        ]);
+    }
+
+    public function test_admin_no_puede_removerse_a_si_mismo_via_equipo(): void
+    {
+        [$admin] = $this->crearAdminConBarberia();
+
+        // El destroy de equipo degrada a cliente: sobre un admin (o sobre
+        // sí mismo) dejaría a la barbería sin dueño con un solo request.
+        $this->actingAs($admin)
+             ->deleteJson("/api/barberos/{$admin->id}")
+             ->assertStatus(403);
+
+        $this->assertDatabaseHas('users', [
+            'id'  => $admin->id,
+            'rol' => 'admin',
+        ]);
+    }
+
     public function test_admin_no_puede_ver_barberia_de_otro_tenant(): void
     {
         [$admin] = $this->crearAdminConBarberia();
