@@ -179,7 +179,8 @@ class BarberiaController extends Controller
      */
     public function miEquipo(Request $request)
     {
-        $barberos = User::where('rol', 'barbero')
+        // Scope barberos(): incluye al dueño si también atiende (rol dual).
+        $barberos = User::barberos()
             ->where('barberia_id', $request->user()->barberia_id)
             ->get();
 

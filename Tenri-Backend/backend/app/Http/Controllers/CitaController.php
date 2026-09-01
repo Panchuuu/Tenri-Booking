@@ -6,6 +6,7 @@ use App\Models\BloqueoHorario;
 use App\Models\Cita;
 use App\Models\Servicio;
 use App\Models\User;
+use App\Mail\CalificaTuVisitaMail;
 use App\Mail\CitaCanceladaMail;
 use App\Mail\CitaConfirmadaMail;
 use App\Mail\NuevaCitaBarberoMail;
@@ -34,6 +35,11 @@ class CitaController extends Controller
     // Única fuente de verdad para errorFueraDeTurno() y disponibilidad().
     private const TURNO_INICIO_DEFAULT = '10:00';
     private const TURNO_FIN_DEFAULT    = '19:00';
+
+    // Regla de negocio: máximo de citas activas (pendientes/confirmadas
+    // y aún vigentes) que un cliente puede acumular, contando todas las
+    // barberías. Frena el acaparamiento de horarios y los no-show.
+    private const MAX_CITAS_ACTIVAS_CLIENTE = 3;
 
     public function index(Request $request)
     {
@@ -74,6 +80,23 @@ class CitaController extends Controller
 
         $horaInicio = Carbon::parse($request->hora);
         $horaFin    = $horaInicio->copy()->addMinutes($servicioNuevo->duracion);
+
+        // 🧮 Regla de negocio: tope de citas activas por cliente.
+        $citasActivas = $this->citasActivasDelCliente($request->user()->id);
+        if ($citasActivas->count() >= self::MAX_CITAS_ACTIVAS_CLIENTE) {
+            return response()->json([
+                'message' => 'Ya tienes ' . self::MAX_CITAS_ACTIVAS_CLIENTE .
+                    ' reservas activas. Cancela una o espera a que se realice antes de agendar otra.',
+            ], 422);
+        }
+
+        // 🧮 Regla de negocio: un cliente no puede tener dos citas que se
+        // crucen en horario, aunque sean con barberos o barberías distintas.
+        if ($this->clienteTieneSolape($citasActivas, $request->fecha, $horaInicio, $horaFin)) {
+            return response()->json([
+                'message' => 'Ya tienes otra reserva que se cruza con ese horario. Revísala en Mis Reservas.',
+            ], 409);
+        }
 
         // La transacción + lockForUpdate sobre el barbero serializa las reservas
         // concurrentes: dos requests al mismo slot ya no pueden pasar ambos el
@@ -216,7 +239,7 @@ class CitaController extends Controller
         ]);
 
         $user = $request->user();
-        $cita = Cita::with('servicio')->findOrFail($id);
+        $cita = Cita::with(['servicio', 'barberia'])->findOrFail($id);
 
         // Permisos
         if ($user->rol === 'cliente' && $cita->cliente_id !== $user->id) {
@@ -231,6 +254,23 @@ class CitaController extends Controller
 
         if (in_array($cita->estado, ['finalizada', 'cancelada'])) {
             return response()->json(['error' => 'Esta cita ya no se puede modificar.'], 400);
+        }
+
+        // 🧮 Regla de negocio: el reagendo del CLIENTE respeta la misma
+        // anticipación mínima que la cancelación (tiempo_cancelacion de la
+        // barbería). Sin esto, quien no podía cancelar reagendaba a última
+        // hora y la política quedaba en letra muerta. Admin y barbero exentos.
+        if ($user->rol === 'cliente') {
+            $fechaHoraActual  = Carbon::parse($cita->fecha . ' ' . $cita->hora);
+            $minutosRestantes = Carbon::now()->diffInMinutes($fechaHoraActual, false);
+            $tiempoMinimo     = $cita->barberia->tiempo_cancelacion ?? 30;
+
+            if ($minutosRestantes < $tiempoMinimo) {
+                $textoFinal = $this->formatearTiempo($tiempoMinimo);
+                return response()->json([
+                    'error' => "No puedes reagendar. Esta barbería exige un aviso de al menos {$textoFinal} de anticipación.",
+                ], 403);
+            }
         }
 
         // 🔒 Igual que en store(): after_or_equal:today solo valida la FECHA,
@@ -255,6 +295,17 @@ class CitaController extends Controller
 
         $nuevoInicio = Carbon::parse($request->hora);
         $nuevoFin    = $nuevoInicio->copy()->addMinutes($cita->servicio->duracion ?? 30);
+
+        // 🧮 El nuevo horario tampoco puede cruzarse con otra cita del
+        // propio cliente (excluyendo la que se está moviendo).
+        if ($user->rol === 'cliente') {
+            $citasActivas = $this->citasActivasDelCliente($user->id, $cita->id);
+            if ($this->clienteTieneSolape($citasActivas, $request->fecha, $nuevoInicio, $nuevoFin)) {
+                return response()->json([
+                    'error' => 'Ya tienes otra reserva que se cruza con ese horario.',
+                ], 409);
+            }
+        }
 
         // Mismo lock que en store(): serializa reservas/reagendos concurrentes
         // sobre el mismo barbero para evitar la doble reserva.
@@ -367,6 +418,18 @@ class CitaController extends Controller
         $cita->estado = $request->estado;
         $cita->save();
 
+        // 📧 Al finalizar, invitamos al cliente a calificar su visita
+        if ($estadoAnterior !== 'finalizada' && $cita->estado === 'finalizada' && $cita->calificacion === null) {
+            $cita->load(['servicio', 'cliente', 'barbero', 'barberia']);
+            try {
+                if ($cita->cliente?->email) {
+                    Mail::to($cita->cliente->email)->queue(new CalificaTuVisitaMail($cita));
+                }
+            } catch (\Throwable $e) {
+                \Log::warning('Cita finalizada, pero falló el correo de calificación: ' . $e->getMessage());
+            }
+        }
+
         // 📧 Si el barbero cancela, avisamos al cliente
         if ($estadoAnterior !== 'cancelada' && $cita->estado === 'cancelada' && $user->rol === 'barbero') {
             $cita->load(['servicio', 'cliente']);
@@ -404,7 +467,8 @@ class CitaController extends Controller
 
         // Solo barberos: antes cualquier ID de usuario respondía 200,
         // permitiendo enumerar cuentas por un endpoint público.
-        $barbero = User::where('id', $id)->where('rol', 'barbero')->firstOrFail();
+        // Scope barberos(): incluye al dueño que también atiende (rol dual).
+        $barbero = User::barberos()->where('id', $id)->firstOrFail();
 
         $bloqueo = BloqueoHorario::where('barbero_id', $id)
             ->activoEnFecha($fecha)->first();
@@ -579,6 +643,52 @@ class CitaController extends Controller
             $dur      = $otra->servicio->duracion ?? 30;
             $iniOtra  = Carbon::parse($otra->hora);
             $finOtra  = $iniOtra->copy()->addMinutes($dur);
+            if ($inicio < $finOtra && $fin > $iniOtra) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Citas del cliente en estado activo (pendiente/confirmada) cuya
+     * fecha/hora aún no pasa. Base para el tope de reservas y el
+     * anti-solape del propio cliente.
+     */
+    private function citasActivasDelCliente(int $clienteId, ?int $excluirCitaId = null)
+    {
+        $ahora = Carbon::now('America/Santiago');
+
+        return Cita::with('servicio')
+            ->where('cliente_id', $clienteId)
+            ->whereIn('estado', ['pendiente', 'confirmada'])
+            ->when($excluirCitaId !== null, fn ($q) => $q->where('id', '!=', $excluirCitaId))
+            ->where(function ($q) use ($ahora) {
+                $q->whereDate('fecha', '>', $ahora->toDateString())
+                  ->orWhere(function ($q2) use ($ahora) {
+                      $q2->whereDate('fecha', $ahora->toDateString())
+                         ->where('hora', '>=', $ahora->format('H:i:s'));
+                  });
+            })
+            ->get();
+    }
+
+    /**
+     * ¿La franja [$inicio, $fin) del día $fecha se cruza con alguna de
+     * las citas activas del cliente? A diferencia de haySolape(), acá
+     * el eje es el CLIENTE: aplica entre barberos y barberías distintas.
+     */
+    private function clienteTieneSolape($citasActivas, string $fecha, Carbon $inicio, Carbon $fin): bool
+    {
+        foreach ($citasActivas as $otra) {
+            $fechaOtra = is_string($otra->fecha) ? $otra->fecha : Carbon::parse($otra->fecha)->toDateString();
+            if ($fechaOtra !== $fecha) {
+                continue;
+            }
+            $dur     = $otra->servicio->duracion ?? 30;
+            $iniOtra = Carbon::parse($otra->hora);
+            $finOtra = $iniOtra->copy()->addMinutes($dur);
             if ($inicio < $finOtra && $fin > $iniOtra) {
                 return true;
             }

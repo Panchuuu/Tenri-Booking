@@ -93,6 +93,22 @@ export default function AdminLayout() {
                 <span>{label}</span>
               </NavLink>
             ))}
+
+            {/* 🧢 Rol dual: si el dueño también atiende, acceso directo
+                a su agenda de barbero */}
+            {usuario?.es_barbero && (
+              <>
+                <div className="border-t border-line dark:border-slate-800/50 my-3" />
+                <NavLink
+                  to="/barbero"
+                  onClick={() => setSidebarAbierto(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all active:scale-[0.98] text-ink-2 dark:text-slate-400 hover:bg-paper dark:hover:bg-slate-800/30 hover:translate-x-0.5"
+                >
+                  <ScissorsIcon className="w-5 h-5 shrink-0" />
+                  <span>Mi agenda de barbero</span>
+                </NavLink>
+              </>
+            )}
           </nav>
         </div>
 

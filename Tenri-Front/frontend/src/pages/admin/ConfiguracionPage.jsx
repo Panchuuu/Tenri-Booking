@@ -92,10 +92,11 @@ export default function ConfiguracionPage() {
 
       <div className="bg-white dark:bg-card border border-line dark:border-slate-800/60 rounded-xl p-8 max-w-3xl shadow-none">
         <h3 className="text-xl font-bold text-ink dark:text-white mb-2">
-          Política de Cancelación
+          Política de cancelación y reagendo
         </h3>
         <p className="text-muted text-sm mb-8">
-          Anticipación mínima requerida para que un cliente pueda cancelar sin penalización.
+          Anticipación mínima que exige tu negocio para que un cliente pueda cancelar
+          <strong className="text-ink-2 dark:text-slate-300"> o reagendar</strong> su cita.
         </p>
 
         <form onSubmit={handleGuardar} className="space-y-8">

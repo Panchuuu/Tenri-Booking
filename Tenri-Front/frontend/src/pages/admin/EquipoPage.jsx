@@ -204,7 +204,10 @@ export default function EquipoPage() {
                      maxLength={120} />
               {!editandoId && (
                 <p className="text-[11px] text-muted mt-1.5">
-                  El usuario debe estar registrado previamente.
+                  El usuario debe estar registrado previamente.{" "}
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                    Tip: escribe tu propio correo para sumarte tú como barbero — mantienes tu panel de administrador.
+                  </span>
                 </p>
               )}
             </div>
@@ -318,6 +321,11 @@ export default function EquipoPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline gap-2">
                         <p className="text-ink dark:text-slate-200 font-bold truncate">{b.name}</p>
+                        {b.rol === "admin" && (
+                          <span className="shrink-0 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                            Dueño
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-muted truncate">{b.email}</p>
 

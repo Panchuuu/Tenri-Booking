@@ -101,7 +101,8 @@ export function AuthProvider({ children }) {
     tieneRol,
     esSuperadmin: usuario?.rol === "superadmin",
     esAdmin:      usuario?.rol === "admin",
-    esBarbero:    usuario?.rol === "barbero",
+    // 🧢 Rol dual: el dueño (admin) con es_barbero también cuenta como barbero
+    esBarbero:    usuario?.rol === "barbero" || (usuario?.rol === "admin" && !!usuario?.es_barbero),
     esCliente:    usuario?.rol === "cliente",
   };
 

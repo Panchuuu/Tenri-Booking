@@ -16,6 +16,8 @@ class User extends Authenticatable
         'email',
         'password',
         'rol',
+        // 🧢 Rol dual: admin que además atiende como barbero
+        'es_barbero',
         // 🎯 Pack 3: campo de suspensión de cuenta
         'suspendido',
         'avatar',
@@ -38,6 +40,7 @@ class User extends Authenticatable
         'total_resenas'          => 'integer',
         // 🎯 Pack 3: para devolver true/false al frontend (no 0/1)
         'suspendido'             => 'boolean',
+        'es_barbero'             => 'boolean',
     ];
 
     // Siempre exponer avatar_url en la respuesta JSON
@@ -49,6 +52,33 @@ class User extends Authenticatable
     public function getAvatarUrlAttribute(): ?string
     {
         return $this->avatar ? asset('storage/' . $this->avatar) : null;
+    }
+
+    // ===== Rol dual =====
+
+    /**
+     * ¿Este usuario atiende como barbero? Cubre el rol puro y el
+     * dueño (admin) que además corta. Única fuente de verdad para
+     * "puede recibir reservas / usar el panel de barbero".
+     */
+    public function esBarberoActivo(): bool
+    {
+        return $this->rol === 'barbero'
+            || ($this->rol === 'admin' && $this->es_barbero);
+    }
+
+    /**
+     * Scope: usuarios que atienden como barberos (rol puro o admin
+     * con es_barbero). Reemplaza a los where('rol', 'barbero').
+     */
+    public function scopeBarberos($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('rol', 'barbero')
+              ->orWhere(function ($q2) {
+                  $q2->where('rol', 'admin')->where('es_barbero', true);
+              });
+        });
     }
 
     // ===== Relaciones =====

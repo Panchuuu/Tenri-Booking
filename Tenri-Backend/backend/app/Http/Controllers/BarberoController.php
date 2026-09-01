@@ -19,7 +19,8 @@ class BarberoController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::where('rol', 'barbero');
+        // Scope barberos(): rol puro + dueños que también atienden.
+        $query = User::barberos();
 
         if ($request->filled('barberia')) {
             $query->whereHas('barberia', fn ($q) => $q->where('slug', $request->barberia));
@@ -70,8 +71,13 @@ class BarberoController extends Controller
         $esCliente  = $usuario->rol === 'cliente';
         $esMiBarbero = $usuario->rol === 'barbero'
             && $usuario->barberia_id === $request->user()->barberia_id;
+        // 🧢 Rol dual: el dueño (admin de ESTA barbería) puede sumarse al
+        // equipo sin perder su panel — se marca es_barbero en vez de
+        // cambiarle el rol. Cubre también re-asignaciones de horario.
+        $esAdminDeMiBarberia = $usuario->rol === 'admin'
+            && $usuario->barberia_id === $request->user()->barberia_id;
 
-        if (!$esCliente && !$esMiBarbero) {
+        if (!$esCliente && !$esMiBarbero && !$esAdminDeMiBarberia) {
             return response()->json([
                 'error' => 'Ese usuario no está disponible para unirse a tu equipo.',
             ], 422);
@@ -83,8 +89,12 @@ class BarberoController extends Controller
             ], 422);
         }
 
-        $usuario->rol         = 'barbero';
-        $usuario->barberia_id = $request->user()->barberia_id;
+        if ($esAdminDeMiBarberia) {
+            $usuario->es_barbero = true; // conserva rol admin y su panel
+        } else {
+            $usuario->rol         = 'barbero';
+            $usuario->barberia_id = $request->user()->barberia_id;
+        }
 
         if ($request->filled('hora_inicio')) $usuario->hora_inicio = $request->hora_inicio;
         if ($request->filled('hora_fin'))    $usuario->hora_fin    = $request->hora_fin;
@@ -105,7 +115,9 @@ class BarberoController extends Controller
         // 🔒 Este endpoint gestiona BARBEROS. Sin el check, un admin podía
         // editar (o abajo, degradar a cliente) a otro admin de su misma
         // barbería, o a sí mismo, vía un request directo.
-        if ($usuario->rol !== 'barbero') {
+        // 🧢 Rol dual: un admin con es_barbero SÍ es editable aquí (su
+        // ficha de barbero: horario, bio, especialidad, foto).
+        if (!$usuario->esBarberoActivo()) {
             return response()->json(['error' => 'Solo puedes gestionar cuentas de barberos.'], 403);
         }
 
@@ -152,7 +164,7 @@ class BarberoController extends Controller
         }
 
         // 🔒 Mismo guard que update(): remover solo aplica a barberos.
-        if ($usuario->rol !== 'barbero') {
+        if (!$usuario->esBarberoActivo()) {
             return response()->json(['error' => 'Solo puedes gestionar cuentas de barberos.'], 403);
         }
 
@@ -170,9 +182,15 @@ class BarberoController extends Controller
                 $cita->save();
             }
 
-            // Despasamos al barbero a cliente normal
-            $usuario->rol         = 'cliente';
-            $usuario->barberia_id = null;
+            if ($usuario->rol === 'admin') {
+                // 🧢 Rol dual: el dueño deja de atender, pero conserva
+                // su rol admin y su barbería.
+                $usuario->es_barbero = false;
+            } else {
+                // Despasamos al barbero a cliente normal
+                $usuario->rol         = 'cliente';
+                $usuario->barberia_id = null;
+            }
             $usuario->save();
         });
 

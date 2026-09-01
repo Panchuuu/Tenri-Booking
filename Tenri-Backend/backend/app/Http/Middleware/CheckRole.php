@@ -24,12 +24,18 @@ class CheckRole
         }
 
         // 3. Verificamos si el rol del usuario está dentro de los roles permitidos para esta ruta
-        if (!in_array($request->user()->rol, $roles)) {
-            return response()->json([
-                'error' => 'Acceso denegado. Este nivel de seguridad requiere permisos de: ' . implode(', ', $roles)
-            ], 403);
+        if (in_array($request->user()->rol, $roles)) {
+            return $next($request);
         }
 
-        return $next($request);
+        // 3b. Rol dual: un admin que también atiende (es_barbero) cuenta
+        //     como barbero en las rutas que lo exijan.
+        if (in_array('barbero', $roles) && $request->user()->esBarberoActivo()) {
+            return $next($request);
+        }
+
+        return response()->json([
+            'error' => 'Acceso denegado. Este nivel de seguridad requiere permisos de: ' . implode(', ', $roles)
+        ], 403);
     }
 }

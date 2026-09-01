@@ -28,10 +28,18 @@ class StoreCitaRequest extends FormRequest
 
         return [
             'servicio_id' => 'required|exists:servicios,id',
-            // 🔒 FASE 1: el barbero debe existir Y tener rol "barbero".
+            // 🔒 FASE 1: el barbero debe existir Y atender como barbero
+            // (rol puro, o admin con es_barbero — rol dual del dueño).
             'barbero_id'  => [
                 'required',
-                Rule::exists('users', 'id')->where(fn ($q) => $q->where('rol', 'barbero')),
+                Rule::exists('users', 'id')->where(function ($q) {
+                    $q->where(function ($sub) {
+                        $sub->where('rol', 'barbero')
+                            ->orWhere(function ($sub2) {
+                                $sub2->where('rol', 'admin')->where('es_barbero', true);
+                            });
+                    });
+                }),
             ],
             'fecha'       => "required|date|after_or_equal:today|before_or_equal:{$fechaMaxima}",
             'hora'        => 'required|date_format:H:i',

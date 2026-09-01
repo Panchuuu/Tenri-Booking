@@ -33,8 +33,15 @@ export default function ProtectedRoute({ children, roles }) {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
-  // Sesión válida pero rol incorrecto → al inicio
-  if (roles && roles.length > 0 && !roles.includes(usuario.rol)) {
+  // Sesión válida pero rol incorrecto → al inicio.
+  // 🧢 Rol dual: un admin con es_barbero pasa las rutas que piden "barbero".
+  const cumpleRol =
+    !roles ||
+    roles.length === 0 ||
+    roles.includes(usuario.rol) ||
+    (roles.includes("barbero") && usuario.rol === "admin" && usuario.es_barbero);
+
+  if (!cumpleRol) {
     return <Navigate to="/" replace />;
   }
 
