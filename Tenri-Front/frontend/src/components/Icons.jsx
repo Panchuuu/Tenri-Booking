@@ -151,6 +151,19 @@ export const TrashIcon = (props) => (
   </Icon>
 );
 
+export const BanIcon = (props) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="10"></circle>
+    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+  </Icon>
+);
+
+export const PlayIcon = (props) => (
+  <Icon {...props}>
+    <polygon points="6 3 20 12 6 21 6 3"></polygon>
+  </Icon>
+);
+
 export const PlusIcon = (props) => (
   <Icon {...props}>
     <line x1="12" y1="5" x2="12" y2="19"></line>

@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    /*
+    | Canal server-to-server con el panel de administración de tenri.cl.
+    | La clave es la misma que el panel tiene en su BOOKING_PANEL_KEY; la lee
+    | el middleware VerificarFirmaPanel (entrante). Sin ella, el canal entero
+    | responde 401 (falla cerrado).
+    | Generar con: php artisan tinker --execute="echo bin2hex(random_bytes(32));"
+    */
+    'panel' => [
+        'integration_key' => env('PANEL_INTEGRATION_KEY'),
+    ],
+
 ];

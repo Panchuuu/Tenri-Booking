@@ -44,6 +44,15 @@ class AuthController extends Controller
             ], 403);
         }
 
+        // Barbería suspendida: sus admins y barberos no entran. Los clientes
+        // no tienen barbería propia y no se ven afectados, y el superadmin
+        // queda exento — es quien tiene que poder entrar a reactivarla.
+        if ($user->rol !== 'superadmin' && $user->barberia_id !== null && ! $user->barberia()->activas()->exists()) {
+            return response()->json([
+                'message' => 'La barbería de tu cuenta está suspendida. Contacta al administrador.',
+            ], 403);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([

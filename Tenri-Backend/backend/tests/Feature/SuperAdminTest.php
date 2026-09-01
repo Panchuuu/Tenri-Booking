@@ -130,4 +130,59 @@ class SuperAdminTest extends TestCase
         $this->assertDatabaseHas('barberias', ['slug' => 'barberia-vip']);
         $this->assertDatabaseHas('barberias', ['slug' => 'barberia-vip-2']);
     }
+
+    public function test_superadmin_ve_todas_las_barberias_incluidas_las_suspendidas(): void
+    {
+        $superadmin = User::factory()->superadmin()->create();
+        $activa     = Barberia::factory()->create();
+        $suspendida = Barberia::factory()->create();
+        $suspendida->alternarSuspension();
+
+        // El público no la ve; el superadmin sí — es quien puede reactivarla.
+        $this->getJson('/api/barberias')->assertOk()->assertJsonPath('total', 1);
+
+        $respuesta = $this->actingAs($superadmin)
+            ->getJson('/api/superadmin/barberias')
+            ->assertOk();
+
+        $barberias = collect($respuesta->json('barberias'));
+        $this->assertCount(2, $barberias);
+        $this->assertFalse($barberias->firstWhere('id', $suspendida->id)['activa']);
+        $this->assertTrue($barberias->firstWhere('id', $activa->id)['activa']);
+    }
+
+    public function test_admin_no_puede_ver_el_listado_de_superadmin(): void
+    {
+        $barberia = Barberia::factory()->create();
+        $admin    = User::factory()->admin($barberia->id)->create();
+
+        $this->actingAs($admin)->getJson('/api/superadmin/barberias')->assertStatus(403);
+        $this->actingAs($admin)->patchJson("/api/superadmin/barberias/{$barberia->id}/suspender")->assertStatus(403);
+    }
+
+    public function test_superadmin_puede_suspender_y_reactivar_una_barberia(): void
+    {
+        $superadmin = User::factory()->superadmin()->create();
+        $barberia   = Barberia::factory()->create();
+        $admin      = User::factory()->admin($barberia->id)->create();
+        $admin->createToken('sesion-viva');
+
+        // Suspender: sale del público y las sesiones de sus usuarios caen.
+        $this->actingAs($superadmin)
+            ->patchJson("/api/superadmin/barberias/{$barberia->id}/suspender")
+            ->assertOk()
+            ->assertJsonPath('barberia.activa', false);
+
+        $this->getJson('/api/barberias')->assertOk()->assertJsonPath('total', 0);
+        $this->assertSame(0, $admin->tokens()->count());
+
+        // Reactivar: todo vuelve, nada se borró.
+        $this->actingAs($superadmin)
+            ->patchJson("/api/superadmin/barberias/{$barberia->id}/suspender")
+            ->assertOk()
+            ->assertJsonPath('barberia.activa', true);
+
+        $this->getJson('/api/barberias')->assertOk()->assertJsonPath('total', 1);
+        $this->assertDatabaseHas('users', ['id' => $admin->id]);
+    }
 }

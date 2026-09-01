@@ -68,6 +68,14 @@ class CitaController extends Controller
     {
         $servicioNuevo = Servicio::findOrFail($request->servicio_id);
 
+        // 🚫 Barbería suspendida desde el panel: no acepta reservas nuevas.
+        // Las citas ya agendadas quedan como están — suspender no borra nada.
+        if (! $servicioNuevo->barberia()->activas()->exists()) {
+            return response()->json([
+                'message' => 'Esta barbería no está aceptando reservas por el momento.',
+            ], 403);
+        }
+
         // 🚫 Bloqueos
         $tieneBloqueo = BloqueoHorario::where('barbero_id', $request->barbero_id)
             ->activoEnFecha($request->fecha)->exists();

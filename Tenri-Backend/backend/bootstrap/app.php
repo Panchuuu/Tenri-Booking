@@ -15,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // 👇 AQUÍ REGISTRAMOS NUESTRO MIDDLEWARE DE ROLES
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
+            // Canal server-to-server con el panel de tenri.cl (firma HMAC).
+            'firma.panel' => \App\Http\Middleware\VerificarFirmaPanel::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

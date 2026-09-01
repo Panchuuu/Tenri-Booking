@@ -9,7 +9,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import { parseApiErrorSync } from "../utils/parseApiError";
 import UsuariosTab from "../components/UsuariosTab";
 import EditarBarberiaModal from "../components/EditarBarberiaModal";
-import { BuildingIcon, PencilIcon, TrashIcon, UsersIcon } from "../components/Icons";
+import { BanIcon, BuildingIcon, PencilIcon, PlayIcon, TrashIcon, UsersIcon } from "../components/Icons";
 
 // ============================================================
 // 👑 SUPERADMIN — Rediseño Master (Facelift Light + acento ámbar)
@@ -73,6 +73,21 @@ function FilaSkeleton() {
   );
 }
 
+// Estado de la barbería: suspendida no se borra, se pausa.
+function EstadoBadge({ activa }) {
+  return activa !== false ? (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+      Activa
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+      <BanIcon className="w-3 h-3" />
+      Suspendida
+    </span>
+  );
+}
+
 // Botón de acción tipo "ghost" para filas de tabla
 function BotonAccion({ onClick, titulo, variante = "neutral", children }) {
   const colores =
@@ -94,30 +109,18 @@ function BotonAccion({ onClick, titulo, variante = "neutral", children }) {
 export default function SuperAdminPage() {
   const [form, setForm] = useState(FORM_VACIO);
 
-  // El listado /barberias está paginado (12 por defecto): el CRUD del
-  // superadmin necesita TODAS las páginas o las barberías más allá de la
-  // primera quedarían sin poder editarse/eliminarse.
   const [barberiasData, setBarberiasData] = useState(null); // null = aún no cargado
   const [errorBarberias, setErrorBarberias] = useState(false);
 
   const refetch = useCallback(async () => {
     try {
-      const todas = [];
-      let pagina = 1;
-      let ultima = 1;
-      do {
-        const r = await apiFetch(`/barberias?per_page=50&page=${pagina}`);
-        // Un fallo a mitad del loop no debe dejar una lista parcial
-        // silenciosa: el superadmin creería que esas barberías no existen.
-        if (!r.ok) throw new Error(`Error HTTP ${r.status}`);
-        const json = await r.json();
-        todas.push(...(json.data || []));
-        ultima = json.last_page || 1;
-        pagina += 1;
-        // Tope duro: si la API devolviera un last_page inconsistente
-        // (siempre mayor que la página actual), cortamos igual.
-      } while (pagina <= ultima && pagina <= 200);
-      setBarberiasData(todas);
+      // El endpoint propio del superadmin y no el público: el público filtra
+      // las suspendidas, y el superadmin es justo quien tiene que verlas
+      // para poder reactivarlas. Además llega todo en una sola llamada.
+      const r = await apiFetch("/superadmin/barberias");
+      if (!r.ok) throw new Error(`Error HTTP ${r.status}`);
+      const json = await r.json();
+      setBarberiasData(json.barberias || []);
       setErrorBarberias(false);
     } catch (e) {
       console.error(e);
@@ -136,7 +139,11 @@ export default function SuperAdminPage() {
   const [tabActiva, setTabActiva] = useState("negocios");
   const [editandoBarberia,          setEditandoBarberia]          = useState(null);
   const [confirmarEliminarBarberia, setConfirmarEliminarBarberia] = useState(null);
+  // Suspender pide confirmación (cierra sesiones y saca del público);
+  // reactivar es directo porque solo devuelve las cosas a su lugar.
+  const [confirmarSuspenderBarberia, setConfirmarSuspenderBarberia] = useState(null);
   const { ejecutar: ejecutarBarberia, cargando: eliminando } = useApiMutation();
+  const { ejecutar: ejecutarSuspension, cargando: suspendiendo, getLastError: getErrorSuspension } = useApiMutation();
   const {
     data: usuariosData,
     cargando: cargandoUsuarios,
@@ -145,6 +152,7 @@ export default function SuperAdminPage() {
 
   const usuarios = usuariosData?.data || usuariosData || [];
   const suspendidos = usuarios.filter((u) => u.suspendido).length;
+  const negociosActivos = barberias.filter((b) => b.activa !== false).length;
 
   const handleCrear = async (e) => {
     e.preventDefault();
@@ -173,6 +181,30 @@ export default function SuperAdminPage() {
         "Error al crear el negocio. Revisa los datos."
       ));
     }
+  };
+
+  const alternarSuspension = async (barberia) => {
+    if (suspendiendo) return;
+    const r = await ejecutarSuspension(
+      `/superadmin/barberias/${barberia.id}/suspender`,
+      { method: "PATCH" }
+    );
+    if (r) {
+      toast.success(r.mensaje || "Estado actualizado");
+      setConfirmarSuspenderBarberia(null);
+      refetch();
+    } else {
+      toast.error(parseApiErrorSync(getErrorSuspension()?.body, "No se pudo cambiar el estado de la barbería"));
+      setConfirmarSuspenderBarberia(null);
+    }
+  };
+
+  const handleToggleSuspension = (barberia) => {
+    if (barberia.activa !== false) {
+      setConfirmarSuspenderBarberia(barberia);
+      return;
+    }
+    alternarSuspension(barberia);
   };
 
   const handleEliminarBarberia = async () => {
@@ -218,7 +250,7 @@ export default function SuperAdminPage() {
 
       {/* ── Stats de la red ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <StatCard etiqueta="Negocios activos" valor={barberias.length}
+        <StatCard etiqueta="Negocios activos" valor={`${negociosActivos}/${barberias.length}`}
                   cargando={barberiasData === null} delay={0} />
         <StatCard etiqueta="Usuarios" valor={usuarios.length}
                   cargando={cargandoUsuarios} delay={80} />
@@ -417,6 +449,7 @@ export default function SuperAdminPage() {
                     <thead className="bg-paper-2 dark:bg-night-2 border-b border-line dark:border-slate-800/60 text-muted font-semibold uppercase text-[10px] tracking-widest">
                       <tr>
                         <th className="px-5 py-4">Empresa</th>
+                        <th className="px-5 py-4">Estado</th>
                         <th className="px-5 py-4">Slug</th>
                         <th className="px-5 py-4">Marca</th>
                         <th className="px-5 py-4 text-right">Acciones</th>
@@ -443,11 +476,12 @@ export default function SuperAdminPage() {
                                 </div>
                               )}
                               <div className="min-w-0">
-                                <p className="text-ink dark:text-slate-200 font-bold truncate">{b.nombre}</p>
+                                <p className={`font-bold truncate ${b.activa === false ? "text-muted line-through decoration-1" : "text-ink dark:text-slate-200"}`}>{b.nombre}</p>
                                 <p className="text-faint font-mono text-[11px] tabular">#{b.id}</p>
                               </div>
                             </div>
                           </td>
+                          <td className="px-5 py-3.5"><EstadoBadge activa={b.activa} /></td>
                           <td className="px-5 py-3.5 text-muted font-mono text-xs">/{b.slug}</td>
                           <td className="px-5 py-3.5">
                             <span className="inline-flex items-center gap-2 font-mono text-xs text-muted dark:text-slate-400">
@@ -460,6 +494,15 @@ export default function SuperAdminPage() {
                           </td>
                           <td className="px-5 py-3.5">
                             <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                              {b.activa === false ? (
+                                <BotonAccion onClick={() => handleToggleSuspension(b)} titulo={`Reactivar ${b.nombre}`}>
+                                  <PlayIcon className="w-4 h-4" />
+                                </BotonAccion>
+                              ) : (
+                                <BotonAccion onClick={() => handleToggleSuspension(b)} titulo={`Suspender ${b.nombre}`} variante="danger">
+                                  <BanIcon className="w-4 h-4" />
+                                </BotonAccion>
+                              )}
                               <BotonAccion onClick={() => setEditandoBarberia(b)} titulo={`Editar ${b.nombre}`}>
                                 <PencilIcon className="w-4 h-4" />
                               </BotonAccion>
@@ -495,19 +538,24 @@ export default function SuperAdminPage() {
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2">
-                          <h4 className="font-bold text-ink dark:text-white truncate">{b.nombre}</h4>
+                          <h4 className={`font-bold truncate ${b.activa === false ? "text-muted line-through decoration-1" : "text-ink dark:text-white"}`}>{b.nombre}</h4>
                           <span className="text-faint font-mono text-[10px] tabular shrink-0">#{b.id}</span>
                         </div>
                         <p className="text-xs text-muted font-mono mt-0.5 truncate">/{b.slug}</p>
-                        <span className="inline-flex items-center gap-1.5 mt-1.5 font-mono text-[10px] text-muted">
-                          <span
-                            className="w-2.5 h-2.5 rounded-full border border-black/10 dark:border-white/10"
-                            style={{ backgroundColor: b.color_principal }}
-                          />
-                          {b.color_principal?.toUpperCase()}
-                        </span>
+                        <div className="mt-1.5">
+                          <EstadoBadge activa={b.activa} />
+                        </div>
                       </div>
                       <div className="flex flex-col gap-1 shrink-0">
+                        {b.activa === false ? (
+                          <BotonAccion onClick={() => handleToggleSuspension(b)} titulo={`Reactivar ${b.nombre}`}>
+                            <PlayIcon className="w-4 h-4" />
+                          </BotonAccion>
+                        ) : (
+                          <BotonAccion onClick={() => handleToggleSuspension(b)} titulo={`Suspender ${b.nombre}`} variante="danger">
+                            <BanIcon className="w-4 h-4" />
+                          </BotonAccion>
+                        )}
                         <BotonAccion onClick={() => setEditandoBarberia(b)} titulo={`Editar ${b.nombre}`}>
                           <PencilIcon className="w-4 h-4" />
                         </BotonAccion>
@@ -539,6 +587,19 @@ export default function SuperAdminPage() {
         barberia={editandoBarberia}
         onClose={() => setEditandoBarberia(null)}
         onGuardado={refetch}
+      />
+
+      <ConfirmModal
+        abierto={confirmarSuspenderBarberia !== null}
+        cargando={suspendiendo}
+        titulo="Suspender barbería"
+        mensaje={confirmarSuspenderBarberia
+          ? `¿Suspender "${confirmarSuspenderBarberia.nombre}"? Saldrá del listado público, no aceptará reservas nuevas y las sesiones de su equipo se cerrarán. No se borra nada: puedes reactivarla cuando quieras.`
+          : ""}
+        textoConfirmar="Sí, suspender"
+        variante="danger"
+        onConfirmar={() => confirmarSuspenderBarberia && alternarSuspension(confirmarSuspenderBarberia)}
+        onCancelar={() => setConfirmarSuspenderBarberia(null)}
       />
 
       <ConfirmModal

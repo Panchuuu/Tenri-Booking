@@ -35,7 +35,56 @@ class Barberia extends Model
     ];
 
     // 2. Le decimos a Laravel que SIEMPRE envíe este campo inventado llamado 'logo_url'
-    protected $appends = ['logo_url', 'rubro_nombre'];
+    protected $appends = ['logo_url', 'rubro_nombre', 'activa'];
+
+    /**
+     * La suspensión, derivada de `estado_suscripcion` (columna que existía
+     * desde la migración de suscripciones pero que nada leía). Una barbería
+     * suspendida sale del listado público, no acepta reservas nuevas y sus
+     * usuarios no pueden iniciar sesión. Se cambia solo desde el canal del
+     * panel (IntegracionPanelController), por eso la columna no está en
+     * $fillable.
+     */
+    public function getActivaAttribute(): bool
+    {
+        return $this->estado_suscripcion !== 'suspendida';
+    }
+
+    /** Solo las barberías que el público debe ver y reservar. */
+    public function scopeActivas($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('estado_suscripcion')
+              ->orWhere('estado_suscripcion', '!=', 'suspendida');
+        });
+    }
+
+    /**
+     * Suspende o reactiva la barbería (toggle). La única forma de cambiar el
+     * estado: la comparten el canal del panel y el superadmin de esta app,
+     * para que "suspender" signifique siempre lo mismo.
+     *
+     * Al suspender se revocan los tokens de sus usuarios: sin eso, un admin
+     * con sesión viva seguiría operando una barbería suspendida.
+     *
+     * @return bool el estado resultante de `activa`
+     */
+    public function alternarSuspension(): bool
+    {
+        $suspender = $this->activa;
+
+        $this->forceFill([
+            'estado_suscripcion' => $suspender ? 'suspendida' : 'activa',
+        ])->save();
+
+        if ($suspender) {
+            foreach ($this->usuarios()->get() as $usuario) {
+                $usuario->tokens()->delete();
+            }
+        }
+
+        return ! $suspender;
+    }
 
     // Etiqueta legible del rubro, siempre presente en el JSON.
     public function getRubroNombreAttribute(): string

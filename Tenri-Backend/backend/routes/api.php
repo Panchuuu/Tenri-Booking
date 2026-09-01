@@ -7,13 +7,34 @@ use App\Http\Controllers\BarberoController;
 use App\Http\Controllers\BloqueoHorarioController;
 use App\Http\Controllers\CitaController;
 use App\Http\Controllers\FavoritoController;
+use App\Http\Controllers\IntegracionPanelController;
 use App\Http\Controllers\ServicioController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // ==========================================
+// 🤝 CANAL DEL PANEL (server-to-server)
+// ==========================================
+// Sin auth:sanctum: quien llama es el backend del panel de tenri.cl, firmando
+// cada request con HMAC (middleware firma.panel). Todo por POST/PUT con la
+// intención en el cuerpo, para que la firma cubra qué se pidió. El throttle es
+// holgado: el sondeo pega cada 5 minutos y la gestión es esporádica.
+Route::middleware(['firma.panel', 'throttle:60,1'])->prefix('integracion/panel')->group(function () {
+    Route::post('/metricas',  [IntegracionPanelController::class, 'metricas']);
+    Route::post('/barberias', [IntegracionPanelController::class, 'barberias']);
+    Route::put ('/barberias/{id}/suspension', [IntegracionPanelController::class, 'toggleSuspensionBarberia'])->whereNumber('id');
+    Route::post('/usuarios',  [IntegracionPanelController::class, 'usuarios']);
+    Route::put ('/usuarios/{id}/rol',        [IntegracionPanelController::class, 'cambiarRolUsuario'])->whereNumber('id');
+    Route::put ('/usuarios/{id}/suspension', [IntegracionPanelController::class, 'toggleSuspensionUsuario'])->whereNumber('id');
+});
+
+// ==========================================
 // 🔓 PÚBLICAS
 // ==========================================
+// Salud del servicio, con el contrato compartido de la plataforma
+// ({"status":"ok"|"degraded"}). Lo sondea el panel de estado de tenri.cl.
+Route::get('/health', \App\Http\Controllers\HealthController::class);
+
 Route::get('/rubros',    [BarberiaController::class, 'rubros']);
 Route::get('/servicios', [ServicioController::class, 'index']);
 Route::get('/barberos', [BarberoController::class, 'index']);
@@ -37,6 +58,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // 👑 SUPERADMIN
     Route::middleware('role:superadmin')->group(function () {
+        // Listado completo (incluye suspendidas, que el público no ve) y
+        // suspensión reversible — la alternativa al DELETE destructivo.
+        Route::get  ('/superadmin/barberias',                [BarberiaController::class, 'indexSuperadmin']);
+        Route::patch('/superadmin/barberias/{id}/suspender', [BarberiaController::class, 'toggleSuspension'])->whereNumber('id');
+
         Route::post  ('/barberias',      [BarberiaController::class, 'store']);
         Route::post  ('/barberias/{id}', [BarberiaController::class, 'update']); // multipart
         Route::put   ('/barberias/{id}', [BarberiaController::class, 'update']); // JSON

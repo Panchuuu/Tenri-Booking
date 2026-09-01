@@ -35,7 +35,10 @@ class BarberiaController extends Controller
         $porPagina = max(1, min((int) $request->query('per_page', 12), 50));
 
         return response()->json(
+            // Solo activas: una barbería suspendida desde el panel no existe
+            // para el público.
             Barberia::query()
+                ->activas()
                 ->with('servicios:id,barberia_id,nombre')
                 ->withAvg(['citas as calificacion_promedio' => fn ($q) => $q->whereNotNull('calificacion')], 'calificacion')
                 ->withCount(['citas as total_resenas' => fn ($q) => $q->whereNotNull('calificacion')])
@@ -51,11 +54,51 @@ class BarberiaController extends Controller
     public function showPorSlug(string $slug)
     {
         return response()->json(
+            // 404 y no 403 para una suspendida: hacia afuera no se distingue
+            // de una que nunca existió.
             Barberia::where('slug', $slug)
+                ->activas()
                 ->withAvg(['citas as calificacion_promedio' => fn ($q) => $q->whereNotNull('calificacion')], 'calificacion')
                 ->withCount(['citas as total_resenas' => fn ($q) => $q->whereNotNull('calificacion')])
                 ->firstOrFail()
         );
+    }
+
+    /**
+     * Listado completo para el superadmin: incluye las suspendidas, que el
+     * endpoint público filtra. Sin paginar a propósito — el superadmin
+     * administra la red entera y la lista es corta; el público pagina porque
+     * navega, el superadmin gestiona.
+     */
+    public function indexSuperadmin()
+    {
+        return response()->json([
+            'barberias' => Barberia::query()
+                ->withCount('usuarios')
+                ->withAvg(['citas as calificacion_promedio' => fn ($q) => $q->whereNotNull('calificacion')], 'calificacion')
+                ->withCount(['citas as total_resenas' => fn ($q) => $q->whereNotNull('calificacion')])
+                ->orderBy('nombre')
+                ->get(),
+        ]);
+    }
+
+    /**
+     * Suspender o reactivar una barbería (toggle), la alternativa reversible
+     * al DELETE: sale del listado público, no acepta reservas y sus usuarios
+     * no entran, pero nada se borra.
+     */
+    public function toggleSuspension($id)
+    {
+        $barberia = Barberia::findOrFail($id);
+
+        $activa = $barberia->alternarSuspension();
+
+        return response()->json([
+            'mensaje' => $activa
+                ? 'Barbería reactivada. Vuelve al listado público y sus usuarios recuperan el acceso.'
+                : 'Barbería suspendida. Salió del listado público y las sesiones de sus usuarios fueron cerradas.',
+            'barberia' => $barberia->fresh(),
+        ]);
     }
 
     public function store(StoreBarberiaRequest $request)
