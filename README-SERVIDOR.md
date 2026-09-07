@@ -76,11 +76,17 @@ cd ~/domains/booking.tenri.cl/booking_backend && php artisan queue:work --stop-w
 
 > Si ya tenías estos crons apuntando a `~/booking_backend`, edítalos con la ruta nueva.
 
-## 3. Auto-deploy del backend (elegir UNA opción)
+## 3. Auto-deploy del backend
 
-### Opción A — paso SSH en el pipeline (recomendada, aplica al instante)
+### Opción A — paso SSH en el pipeline (**la elegida**, aplica al instante)
 
-El workflow ya trae un paso SSH que se activa solo al configurar los secrets.
+El workflow ya trae un paso SSH que se activa solo al configurar los secrets:
+mientras `SSH_HOST` esté vacío el paso se salta y el backend queda sin aplicar.
+
+El paso es tolerante a los push que no tocan el backend: si el FTP no dejó
+`backend.zip` (porque nada del backend cambió), el paso avisa y termina en verde.
+Si el zip existe pero está a medio subir, `unzip -tqq` lo detecta y aborta antes
+de tocar el código en producción.
 
 1. En el servidor (SSH o Terminal de DirectAdmin), crear una llave dedicada:
 
@@ -106,7 +112,7 @@ cat ~/.ssh/github_deploy
    con timeout de conexión, el hosting bloquea las IPs de GitHub → borra los
    secrets y usa la Opción B.
 
-### Opción B — cron watcher (si el hosting bloquea SSH externo)
+### Opción B — cron watcher (solo si el hosting bloquea SSH externo)
 
 Cron de DirectAdmin cada minuto (aplica con ~1 min de retraso):
 

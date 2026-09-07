@@ -172,6 +172,15 @@ jobs:
           script: |
             set -e
             cd ~/domains/booking.tenri.cl/booking_backend
+            # El FTP solo sube backend.zip cuando el backend cambio. Si no hay
+            # zip, no hay nada que aplicar y el deploy igual es exitoso.
+            if [ ! -f backend.zip ]; then
+              echo "ℹ️ Sin backend.zip: el backend no cambio en este push."
+              exit 0
+            fi
+            # El indice del zip va al final: si el FTP aun no termina, el test
+            # falla y preferimos abortar sin tocar el codigo en produccion.
+            unzip -tqq backend.zip
             unzip -o backend.zip && rm backend.zip
             php artisan migrate --force
             php artisan optimize:clear
