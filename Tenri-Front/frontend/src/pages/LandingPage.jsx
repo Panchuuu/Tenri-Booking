@@ -346,8 +346,13 @@ export default function LandingPage() {
 
   // El buscador interno es una acción real de esta página (?q=...), así
   // que se declara: Google puede ofrecerla como sitelinks searchbox.
+  //
+  // Un listado filtrado no se indexa: es casi el mismo contenido que la
+  // portada con menos tiendas, y son infinitas combinaciones. El
+  // canónico siempre apunta a "/".
   useSeo({
     ruta: "/",
+    indexable: !window.location.search,
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "WebSite",

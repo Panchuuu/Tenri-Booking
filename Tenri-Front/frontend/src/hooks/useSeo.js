@@ -40,6 +40,12 @@ function ponerMeta(selector, crear, contenido) {
  * @param {string} [opciones.ruta]        Ruta canónica ("/barberia/x"). Default: la actual.
  * @param {string} [opciones.imagen]      URL absoluta para og:image.
  * @param {object} [opciones.jsonLd]      Datos estructurados schema.org.
+ * @param {boolean} [opciones.indexable] false pone noindex. Para vistas que
+ *                                        no deben competir en el buscador:
+ *                                        listados filtrados (contenido casi
+ *                                        igual al de la portada) y fichas que
+ *                                        no existen (si no, Google las ve como
+ *                                        200 con texto de error, un soft 404).
  * @param {boolean} [opciones.listo]      Si es false, no toca nada todavía
  *                                        (para esperar a que carguen los datos).
  */
@@ -49,6 +55,7 @@ export default function useSeo({
   ruta,
   imagen,
   jsonLd,
+  indexable = true,
   listo = true,
 } = {}) {
   const jsonLdSerializado = jsonLd ? JSON.stringify(jsonLd) : null;
@@ -69,6 +76,12 @@ export default function useSeo({
       el.setAttribute("name", "description");
       return el;
     }, descripcionFinal);
+
+    ponerMeta('meta[name="robots"]', () => {
+      const el = document.createElement("meta");
+      el.setAttribute("name", "robots");
+      return el;
+    }, indexable ? "index, follow, max-image-preview:large" : "noindex, follow");
 
     ponerMeta('link[rel="canonical"]', () => {
       const el = document.createElement("link");
@@ -117,5 +130,5 @@ export default function useSeo({
     }
 
     return () => script?.remove();
-  }, [titulo, descripcion, ruta, imagen, jsonLdSerializado, listo]);
+  }, [titulo, descripcion, ruta, imagen, jsonLdSerializado, indexable, listo]);
 }

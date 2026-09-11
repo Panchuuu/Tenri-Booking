@@ -47,10 +47,16 @@ export default function BarberiaDetallePage() {
   const desde = precios.length ? Math.min(...precios) : null;
   const rubroTexto = barberia?.rubro_nombre || "Barbería";
 
+  const noExiste = !barberia && errorBarberia?.status === 404;
+
   useSeo({
-    listo: !!barberia,
+    listo: !!barberia || noExiste,
+    // Una tienda inexistente responde 200 con texto de error: sin esto
+    // Google la indexa como página válida (soft 404).
+    indexable: !noExiste,
+    titulo: noExiste ? "Tienda no encontrada · Tenri Booking" : undefined,
     ruta: `/barberia/${slug}`,
-    titulo: barberia ? `${barberia.nombre} · ${rubroTexto} con hora online` : undefined,
+    ...(barberia ? { titulo: `${barberia.nombre} · ${rubroTexto} con hora online` } : {}),
     descripcion: barberia
       ? [
           `Reserva tu hora en ${barberia.nombre}`,
@@ -66,6 +72,25 @@ export default function BarberiaDetallePage() {
     jsonLd: barberia
       ? {
           "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                {
+                  "@type": "ListItem",
+                  position: 1,
+                  name: "Tiendas",
+                  item: "https://booking.tenri.cl/",
+                },
+                {
+                  "@type": "ListItem",
+                  position: 2,
+                  name: barberia.nombre,
+                  item: `https://booking.tenri.cl/barberia/${barberia.slug}`,
+                },
+              ],
+            },
+            {
           // El tipo cambia según el rubro: un spa no es una peluquería.
           "@type": {
             barberia: "HairSalon",
@@ -120,6 +145,8 @@ export default function BarberiaDetallePage() {
                 })),
               }
             : {}),
+            },
+          ],
         }
       : undefined,
   });
