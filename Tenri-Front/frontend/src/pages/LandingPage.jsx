@@ -158,7 +158,7 @@ function MetaTienda({ barberia, className = "" }) {
 // ── Tarjeta destacada: la primera del listado, al ancho de dos ──
 // Le da ritmo a la grilla y usa el color de la tienda como superficie
 // real, en vez de otra tarjeta blanca más.
-function TiendaDestacada({ barberia, esFavorita, onToggleFavorito }) {
+function TiendaDestacada({ barberia, esFavorita, onToggleFavorito, sola = false }) {
   const revealRef = useReveal();
   const desde = precioDesde(barberia);
   const servicios = (barberia.servicios || []).slice(0, 3);
@@ -167,7 +167,7 @@ function TiendaDestacada({ barberia, esFavorita, onToggleFavorito }) {
     <Link
       ref={revealRef}
       to={`/barberia/${barberia.slug}`}
-      className="reveal group relative sm:col-span-2 flex flex-col sm:flex-row overflow-hidden rounded-2xl border border-line dark:border-slate-800/70 bg-white dark:bg-card transition-all duration-300 hover:-translate-y-0.5 hover:border-line-strong dark:hover:border-slate-700 hover:shadow-[0_6px_24px_rgba(0,0,0,0.06)]"
+      className={`reveal group relative ${sola ? "" : "sm:col-span-2"} flex flex-col sm:flex-row overflow-hidden rounded-2xl border border-line dark:border-slate-800/70 bg-white dark:bg-card transition-all duration-300 hover:-translate-y-0.5 hover:border-line-strong dark:hover:border-slate-700 hover:shadow-[0_6px_24px_rgba(0,0,0,0.06)]`}
     >
       <BotonFavorito
         activo={esFavorita}
@@ -678,6 +678,9 @@ export default function LandingPage() {
   }, [barberias, busqueda, filtroRubro, favoritos, ubicacion, soloFavoritas, orden]);
 
   const [destacada, ...resto] = barberiasFiltradas;
+  // Con un solo resultado la tarjeta destacada ocupaba dos de tres
+  // columnas y dejaba la fila coja. Sola va en una columna propia.
+  const destacadaSola = barberiasFiltradas.length === 1;
 
   const pillFiltro = (activa) =>
     `shrink-0 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-all active:scale-[0.97] ${
@@ -957,13 +960,20 @@ export default function LandingPage() {
             </div>
           ) : (
             <>
-              <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div
+                className={
+                  destacadaSola
+                    ? "max-w-3xl"
+                    : "grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                }
+              >
                 {destacada && (
                   <TiendaDestacada
                     key={destacada.id}
                     barberia={destacada}
                     esFavorita={favoritos.has(destacada.id)}
                     onToggleFavorito={toggleFavorito}
+                    sola={destacadaSola}
                   />
                 )}
                 {resto.map((barberia, idx) => (
