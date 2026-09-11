@@ -1,119 +1,331 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import apiFetch from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import { distanciaKm, formatearDistancia, obtenerUbicacion } from "../utils/geo";
-import SkeletonCard from "../components/SkeletonCard";
-import { SearchIcon } from "../components/Icons";
 import useReveal from "../hooks/useReveal";
+import {
+  SearchIcon,
+  MapPinIcon,
+  ArrowRightIcon,
+  StarIcon,
+  HeartIcon,
+  ScissorsIcon,
+  ClockIcon,
+  CheckIcon,
+} from "../components/Icons";
+import heroBarberia640 from "../assets/barberia-hero-640.webp";
+import heroBarberia1100 from "../assets/barberia-hero-1100.webp";
+import bandaBarberia900 from "../assets/barberia-banda-900.webp";
+import bandaBarberia1800 from "../assets/barberia-banda-1800.webp";
 
 // ============================================================
-// 📄 LANDING — Rediseño minimal editorial (Facelift Light)
+// 📄 LANDING — directorio de tiendas
 // ============================================================
-// Sin hero de imagen ni decoración: titular grande, buscador
-// prominente, chips de rubro + "Cerca de mí" y el directorio.
-// La lógica (paginación acumulativa, favoritos, rubros,
-// cercanía, estados de error) es la misma de siempre.
+// El valor de esta página es el directorio, no un folleto: la
+// estructura va de lo concreto (buscar y ver tiendas) a lo
+// explicativo (cómo se reserva, crear cuenta).
+//
+// Decisiones de diseño que conviene no deshacer sin pensarlo:
+//  · Fotografía real en vez de una maqueta de la app dibujada con
+//    divs. La captura falsa envejecía mal y no decía nada del rubro.
+//  · Un solo acento (esmeralda) para estados y enlaces; los botones
+//    primarios van en tinta, que además pasa AA sobre el hueso.
+//  · Radios: contenedores 16px (rounded-2xl), interactivos pill.
+//  · Movimiento solo con CSS (reveals + hover). Sin librerías nuevas
+//    ni scroll listeners; useReveal usa IntersectionObserver.
+//
+// La lógica de datos es la de siempre: paginación acumulativa,
+// favoritos optimistas, orden por cercanía, búsqueda por nombre y
+// por servicio, y estados explícitos de carga, error y vacío.
 // ============================================================
 
-function BarberiaCard({ barberia, index, esFavorita, onToggleFavorito }) {
+const CLP = (valor) => `$${Number(valor).toLocaleString("es-CL")}`;
+
+/** Precio más bajo del catálogo de la tienda, para orientar sin prometer. */
+function precioDesde(barberia) {
+  const precios = (barberia?.servicios || [])
+    .map((s) => Number(s?.precio))
+    .filter((p) => Number.isFinite(p) && p > 0);
+
+  return precios.length ? Math.min(...precios) : null;
+}
+
+/** Nombres de servicios en una línea, con el resto contado. */
+function resumenServicios(barberia, visibles = 2) {
+  const nombres = (barberia?.servicios || []).map((s) => s?.nombre).filter(Boolean);
+  if (!nombres.length) return null;
+
+  const primeros = nombres.slice(0, visibles).join(", ");
+  const resto = nombres.length - visibles;
+
+  return resto > 0 ? `${primeros} y ${resto} más` : primeros;
+}
+
+function promedioDe(barberia) {
+  if (barberia?.calificacion_promedio == null || !barberia?.total_resenas) return null;
+  // Siempre con un decimal: "5" junto a "4,7" se leía como otra escala.
+  return (Math.round(Number(barberia.calificacion_promedio) * 10) / 10).toFixed(1).replace(".", ",");
+}
+
+/** Marca de la tienda: su logo, o su color con la inicial. */
+function SelloTienda({ barberia, className = "", tamañoTexto = "text-xl" }) {
+  if (barberia.logo_url) {
+    return (
+      <img
+        src={barberia.logo_url}
+        alt={`Logo de ${barberia.nombre}`}
+        loading="lazy"
+        className={`object-cover bg-white ${className}`}
+      />
+    );
+  }
+
+  return (
+    <span
+      aria-hidden="true"
+      className={`flex items-center justify-center font-bold text-white ${tamañoTexto} ${className}`}
+      style={{ backgroundColor: barberia.color_principal || "#1F6F5C" }}
+    >
+      {barberia.nombre?.substring(0, 1).toUpperCase()}
+    </span>
+  );
+}
+
+function BotonFavorito({ activo, onClick, className = "" }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={activo}
+      aria-label={activo ? "Quitar de favoritas" : "Guardar en favoritas"}
+      title={activo ? "Quitar de favoritas" : "Guardar en favoritas"}
+      className={`z-10 grid place-items-center w-9 h-9 rounded-full border transition-all active:scale-90 ${
+        activo
+          ? "bg-[#FDEBEC] border-[#F0CFD1] text-[#9F2F2D] dark:bg-rose-500/10 dark:border-rose-500/30 dark:text-rose-400"
+          : "bg-white/90 border-line text-faint backdrop-blur-sm hover:text-[#9F2F2D] hover:border-[#F0CFD1] dark:bg-card/80 dark:border-slate-700 dark:hover:text-rose-400"
+      } ${className}`}
+    >
+      <HeartIcon className="w-[17px] h-[17px]" relleno={activo} />
+    </button>
+  );
+}
+
+/** Nota y distancia, la misma fila en todas las tarjetas. */
+function MetaTienda({ barberia, className = "" }) {
+  const promedio = promedioDe(barberia);
+  if (promedio == null && barberia._distancia == null) return null;
+
+  return (
+    <div className={`flex items-center gap-2.5 text-sm ${className}`}>
+      {promedio != null && (
+        <span className="inline-flex items-center gap-1.5">
+          <StarIcon className="w-[15px] h-[15px] text-amber-500" />
+          <span className="font-mono font-semibold text-ink dark:text-white tabular">{promedio}</span>
+          <span className="text-faint dark:text-slate-500">({barberia.total_resenas})</span>
+        </span>
+      )}
+      {promedio != null && barberia._distancia != null && (
+        <span aria-hidden="true" className="w-1 h-1 rounded-full bg-line-strong dark:bg-slate-700" />
+      )}
+      {barberia._distancia != null && (
+        <span className="font-mono text-[13px] font-semibold text-[#1F6F5C] dark:text-emerald-400 tabular">
+          a {formatearDistancia(barberia._distancia)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ── Tarjeta destacada: la primera del listado, al ancho de dos ──
+// Le da ritmo a la grilla y usa el color de la tienda como superficie
+// real, en vez de otra tarjeta blanca más.
+function TiendaDestacada({ barberia, esFavorita, onToggleFavorito }) {
   const revealRef = useReveal();
-  const promedio = barberia.calificacion_promedio != null
-    ? Math.round(Number(barberia.calificacion_promedio) * 10) / 10
-    : null;
+  const desde = precioDesde(barberia);
+  const servicios = (barberia.servicios || []).slice(0, 3);
 
   return (
     <Link
       ref={revealRef}
       to={`/barberia/${barberia.slug}`}
-      className="reveal group relative block bg-white dark:bg-card border border-line dark:border-slate-800/60 rounded-xl p-5 transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-line-strong dark:hover:border-slate-700"
-      style={{ "--reveal-delay": `${(index % 3) * 90}ms` }}
+      className="reveal group relative sm:col-span-2 flex flex-col sm:flex-row overflow-hidden rounded-2xl border border-line dark:border-slate-800/70 bg-white dark:bg-card transition-all duration-300 hover:-translate-y-0.5 hover:border-line-strong dark:hover:border-slate-700 hover:shadow-[0_6px_24px_rgba(0,0,0,0.06)]"
     >
-      {/* Corazón de favorito */}
-      <button
+      <BotonFavorito
+        activo={esFavorita}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           onToggleFavorito(barberia.id);
         }}
-        aria-label={esFavorita ? "Quitar de favoritas" : "Guardar en favoritas"}
-        title={esFavorita ? "Quitar de favoritas" : "Guardar en favoritas"}
-        className={`absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center border transition-all active:scale-90 ${
-          esFavorita
-            ? "bg-[#FDEBEC] border-[#F7D4D6] text-[#9F2F2D] dark:bg-rose-500/10 dark:border-rose-500/30 dark:text-rose-400"
-            : "bg-white border-line text-faint hover:text-[#9F2F2D] hover:border-[#F7D4D6] dark:bg-slate-800/60 dark:border-slate-700 dark:hover:text-rose-400"
-        }`}
-      >
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill={esFavorita ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-        </svg>
-      </button>
+        className="absolute top-4 right-4"
+      />
 
-      {/* Identidad: logo + rubro + nombre */}
-      <div className="flex items-start gap-3.5 mb-4 pr-10">
-        <div
-          className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden border border-black/5 shrink-0"
-          style={{ backgroundColor: barberia.logo_url ? "#ffffff" : (barberia.color_principal || "#10b981") }}
-        >
-          {barberia.logo_url ? (
-            <img src={barberia.logo_url} alt={barberia.nombre} className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-white font-bold text-xl">
-              {barberia.nombre.substring(0, 1).toUpperCase()}
+      {/* Panel de marca: color propio de la tienda */}
+      <div className="relative sm:w-44 lg:w-52 shrink-0 overflow-hidden">
+        <SelloTienda
+          barberia={barberia}
+          className="w-full h-32 sm:h-full"
+          tamañoTexto="text-5xl"
+        />
+      </div>
+
+      <div className="flex-1 min-w-0 p-5 lg:p-6">
+        <p className="text-[13px] text-muted dark:text-slate-400 mb-1">
+          {barberia.rubro_nombre || "Barbería"}
+        </p>
+        <h3 className="text-[22px] lg:text-2xl font-bold text-ink dark:text-white tracking-tight leading-tight pr-12">
+          {barberia.nombre}
+        </h3>
+
+        <MetaTienda barberia={barberia} className="mt-3" />
+
+        {barberia.direccion && (
+          <p className="mt-3 inline-flex items-start gap-1.5 text-sm text-muted dark:text-slate-400">
+            <MapPinIcon className="w-4 h-4 mt-0.5 shrink-0 text-faint" />
+            <span className="line-clamp-2">{barberia.direccion}</span>
+          </p>
+        )}
+
+        {servicios.length > 0 && (
+          <ul className="mt-5 space-y-1.5 border-t border-black/5 dark:border-slate-800/70 pt-4">
+            {servicios.map((s) => (
+              <li key={s.id} className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="text-ink-2 dark:text-slate-300 truncate">{s.nombre}</span>
+                <span className="font-mono text-[13px] text-muted dark:text-slate-400 tabular shrink-0">
+                  {CLP(s.precio)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="mt-5 flex items-center justify-between gap-4">
+          <span className="inline-flex items-center gap-2 rounded-full bg-ink dark:bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white dark:text-abyss transition-all group-hover:gap-3">
+            Ver horas
+            <ArrowRightIcon className="w-4 h-4" />
+          </span>
+          {desde != null && (
+            <span className="font-mono text-[13px] text-muted dark:text-slate-400 tabular shrink-0">
+              desde {CLP(desde)}
             </span>
           )}
         </div>
+      </div>
+    </Link>
+  );
+}
+
+function TarjetaTienda({ barberia, index, esFavorita, onToggleFavorito }) {
+  const revealRef = useReveal();
+  const desde = precioDesde(barberia);
+  const servicios = resumenServicios(barberia);
+
+  return (
+    <Link
+      ref={revealRef}
+      to={`/barberia/${barberia.slug}`}
+      className="reveal group relative flex flex-col rounded-2xl border border-line dark:border-slate-800/70 bg-white dark:bg-card p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-line-strong dark:hover:border-slate-700 hover:shadow-[0_6px_24px_rgba(0,0,0,0.06)]"
+      style={{ "--reveal-delay": `${(index % 3) * 80}ms` }}
+    >
+      <BotonFavorito
+        activo={esFavorita}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggleFavorito(barberia.id);
+        }}
+        className="absolute top-4 right-4"
+      />
+
+      <div className="flex items-start gap-3.5 pr-12">
+        <SelloTienda
+          barberia={barberia}
+          className="w-12 h-12 rounded-xl border border-black/5 shrink-0"
+        />
         <div className="min-w-0">
-          <span className="block text-[10px] font-bold uppercase tracking-[0.05em] text-muted dark:text-slate-500 mb-0.5">
-            {barberia.rubro_nombre || "Barbería"}
-          </span>
           <h3 className="text-[17px] font-semibold text-ink dark:text-white leading-snug truncate">
             {barberia.nombre}
           </h3>
+          <p className="text-[13px] text-muted dark:text-slate-400 truncate">
+            {barberia.rubro_nombre || "Barbería"}
+          </p>
         </div>
       </div>
 
-      {/* Rating + distancia */}
-      {(promedio != null && barberia.total_resenas > 0) || barberia._distancia != null ? (
-        <div className="flex items-center gap-3 mb-2 text-sm">
-          {promedio != null && barberia.total_resenas > 0 && (
-            <span className="inline-flex items-center gap-1.5">
-              <svg className="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M11.48 3.5c.16-.38.88-.38 1.04 0l2.12 5.11 5.51.44c.44.04.62.59.28.88l-4.2 3.6 1.28 5.38c.1.43-.36.77-.74.54L12 16.56l-4.77 2.9c-.38.23-.84-.11-.74-.54l1.28-5.39-4.2-3.59a.47.47 0 0 1 .28-.88l5.51-.44 2.12-5.1z" />
-              </svg>
-              <span className="font-semibold text-ink dark:text-white tabular">{promedio.toLocaleString("es-CL")}</span>
-              <span className="text-faint">({barberia.total_resenas})</span>
-            </span>
-          )}
-          {barberia._distancia != null && (
-            <span className="font-mono text-[11px] font-semibold text-[#346538] bg-[#EDF3EC] border border-[#D3E5D2] dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/30 px-2 py-0.5 rounded-full tabular">
-              {formatearDistancia(barberia._distancia)}
-            </span>
-          )}
-        </div>
-      ) : null}
+      <MetaTienda barberia={barberia} className="mt-4" />
+
+      {servicios && (
+        <p className="mt-3 text-sm text-ink-2 dark:text-slate-300 line-clamp-2">{servicios}</p>
+      )}
 
       {barberia.direccion && (
-        <p className="text-xs text-faint dark:text-slate-500 truncate mb-3">
+        <p className="mt-2 text-[13px] text-faint dark:text-slate-500 truncate">
           {barberia.direccion}
         </p>
       )}
 
-      {/* Acción */}
-      <p className="flex items-center gap-1.5 pt-3 border-t border-black/5 dark:border-slate-800/60 text-sm font-medium text-muted dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-        Ver servicios
-        <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5-5 5M5 12h13" />
-        </svg>
-      </p>
+      <div className="mt-auto pt-4 flex items-center justify-between gap-3 border-t border-black/5 dark:border-slate-800/70">
+        <span className="font-mono text-[13px] text-muted dark:text-slate-400 tabular">
+          {desde != null ? `desde ${CLP(desde)}` : ""}
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink dark:text-white">
+          Ver horas
+          <ArrowRightIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400 transition-transform group-hover:translate-x-1" />
+        </span>
+      </div>
     </Link>
+  );
+}
+
+/** Un paso del bloque "Cómo se reserva" (componente aparte: el reveal usa un hook). */
+function PasoReserva({ icono, titulo, texto, orden }) {
+  const revealRef = useReveal();
+
+  return (
+    <li
+      ref={revealRef}
+      className={`reveal ${orden === 1 ? "lg:pt-6" : orden === 2 ? "lg:pt-12" : ""}`}
+      style={{ "--reveal-delay": `${orden * 110}ms` }}
+    >
+      <span className="grid place-items-center w-11 h-11 rounded-2xl bg-[#EDF3EC] dark:bg-emerald-500/10 text-[#1F6F5C] dark:text-emerald-400">
+        {icono}
+      </span>
+      <h3 className="mt-4 text-lg font-semibold text-ink dark:text-white">{titulo}</h3>
+      <p className="mt-1.5 text-[15px] text-muted dark:text-slate-400 leading-relaxed max-w-xs">
+        {texto}
+      </p>
+    </li>
+  );
+}
+
+/** Esqueleto con la misma silueta que la tarjeta real. */
+function TarjetaEsqueleto() {
+  return (
+    <div className="rounded-2xl border border-line dark:border-slate-800/70 bg-white dark:bg-card p-5 animate-pulse">
+      <div className="flex items-start gap-3.5">
+        <div className="w-12 h-12 rounded-xl bg-paper dark:bg-card-2 shrink-0" />
+        <div className="flex-1 space-y-2 pt-1">
+          <div className="h-4 w-2/3 rounded bg-paper dark:bg-card-2" />
+          <div className="h-3 w-1/3 rounded bg-paper dark:bg-card-2" />
+        </div>
+      </div>
+      <div className="mt-5 h-3 w-1/4 rounded bg-paper dark:bg-card-2" />
+      <div className="mt-3 h-3 w-full rounded bg-paper dark:bg-card-2" />
+      <div className="mt-2 h-3 w-4/5 rounded bg-paper dark:bg-card-2" />
+      <div className="mt-5 pt-4 border-t border-black/5 dark:border-slate-800/70 flex justify-between">
+        <div className="h-3 w-20 rounded bg-paper dark:bg-card-2" />
+        <div className="h-3 w-16 rounded bg-paper dark:bg-card-2" />
+      </div>
+    </div>
   );
 }
 
 export default function LandingPage() {
   const { estaLogueado } = useAuth();
   const [busqueda, setBusqueda] = useState("");
+  const directorioRef = useRef(null);
 
   // ❤️ Favoritos del usuario (solo IDs; los corazones se pintan sobre
   // las barberías ya cargadas).
@@ -133,7 +345,7 @@ export default function LandingPage() {
         const r = await apiFetch("/rubros");
         if (r.ok) setRubros(await r.json());
       } catch {
-        // Silencioso: sin catálogo simplemente no se muestran los chips.
+        // Silencioso: sin catálogo simplemente no se muestran los filtros.
       }
     })();
   }, []);
@@ -222,7 +434,7 @@ export default function LandingPage() {
 
   const toggleFavorito = async (barberiaId) => {
     if (!estaLogueado) {
-      toast("Inicia sesión para guardar tus tiendas favoritas.", { icon: "❤️" });
+      toast("Inicia sesión para guardar tus tiendas favoritas.");
       return;
     }
 
@@ -268,11 +480,16 @@ export default function LandingPage() {
     }
   };
 
+  const irAlDirectorio = (e) => {
+    e.preventDefault();
+    directorioRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const barberiasFiltradas = useMemo(() => {
     const q = busqueda.toLowerCase().trim();
     let lista = barberias;
 
-    // La búsqueda ahora también matchea nombres de servicio.
+    // La búsqueda también matchea nombres de servicio.
     if (q) {
       lista = lista.filter(
         (b) =>
@@ -304,286 +521,363 @@ export default function LandingPage() {
     });
   }, [barberias, busqueda, filtroRubro, favoritos, ubicacion]);
 
-  const tabClase = (activa) =>
-    `whitespace-nowrap px-1 pb-3 text-sm transition-colors border-b-2 -mb-px ${
+  const [destacada, ...resto] = barberiasFiltradas;
+
+  const pillFiltro = (activa) =>
+    `shrink-0 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-all active:scale-[0.97] ${
       activa
-        ? "font-semibold text-ink dark:text-white border-ink dark:border-white"
-        : "font-medium text-muted dark:text-slate-400 border-transparent hover:text-ink-2 dark:hover:text-slate-200"
+        ? "bg-ink border-ink text-white dark:bg-emerald-500 dark:border-emerald-500 dark:text-abyss"
+        : "bg-white border-line text-ink-2 hover:border-line-strong dark:bg-card dark:border-slate-800 dark:text-slate-300 dark:hover:border-slate-700"
     }`;
+
+  const tituloDirectorio = busqueda.trim()
+    ? `Resultados para "${busqueda.trim()}"`
+    : ubicacion
+    ? "Tiendas cerca de ti"
+    : "Todas las tiendas";
 
   return (
     <div className="page-transition flex flex-col flex-1">
 
-      {/* ============= HERO EDITORIAL ============= */}
+      {/* ============ HERO ============ */}
       <section className="w-full">
-        <div className="max-w-6xl mx-auto px-6 pt-20 pb-16 lg:pt-28 lg:pb-20 grid lg:grid-cols-[1fr_380px] gap-12 lg:gap-16 items-center">
-          <div className="max-w-2xl">
+        <div className="max-w-7xl mx-auto px-6 pt-20 lg:pt-24 pb-12 lg:pb-14 grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] gap-10 lg:gap-14 items-center">
+
+          <div className="max-w-xl">
             <h1
-              className="text-5xl sm:text-6xl font-bold text-ink dark:text-white tracking-tight leading-[1.08] mb-5 animate-fade-in-up"
+              className="text-[2.5rem] sm:text-5xl lg:text-[3.85rem] font-extrabold text-ink dark:text-white tracking-[-0.035em] leading-[1.04] animate-fade-in-up"
               style={{ textWrap: "balance" }}
             >
-              Reserva tu próxima cita en{" "}
-              <span className="underline-wavy whitespace-nowrap">30 segundos</span>.
+              Reserva tu hora sin llamar a nadie
             </h1>
-            <p className="text-lg text-muted dark:text-slate-400 leading-relaxed mb-10 animate-fade-in-up delay-100">
-              Barberías, salones y centros de estética con agenda online.
-              Elige, reserva y recibe la confirmación por correo.
+            <p
+              className="mt-5 text-lg text-ink-2 dark:text-slate-400 leading-relaxed animate-fade-in-up delay-100"
+              style={{ textWrap: "balance" }}
+            >
+              Barberías, salones y centros de estética con sus horas libres a la vista.
             </p>
 
-            {/* Buscador */}
-            <div className="relative animate-fade-in-up delay-200">
-              <SearchIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-faint pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Busca por nombre o servicio…"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                className="w-full pl-14 pr-6 py-4 rounded-xl bg-white dark:bg-card border border-line dark:border-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 outline-none transition-all text-base text-ink dark:text-white placeholder:text-faint"
-              />
-            </div>
-
-            {/* Cómo funciona — una línea silenciosa */}
-            <p className="mt-8 text-[13px] text-faint dark:text-slate-500 animate-fade-in-up delay-400">
-              Elige barbero, día y hora · Confirmación por correo · Reagenda o cancela online
-            </p>
+            <form onSubmit={irAlDirectorio} className="mt-8 animate-fade-in-up delay-200">
+              <label
+                htmlFor="buscar-tienda"
+                className="block text-[13px] font-medium text-muted dark:text-slate-400 mb-2"
+              >
+                Busca por nombre o servicio
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <div className="relative flex-1">
+                  <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-faint pointer-events-none" />
+                  <input
+                    id="buscar-tienda"
+                    type="search"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    placeholder="Corte de barba, Los Leones, spa…"
+                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white dark:bg-card border border-line dark:border-slate-800 text-base text-ink dark:text-white placeholder:text-faint dark:placeholder:text-slate-500 outline-none transition-all focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="shrink-0 inline-flex items-center justify-center gap-2 rounded-full bg-ink dark:bg-emerald-500 px-7 py-3.5 text-sm font-bold text-white dark:text-abyss transition-all hover:bg-ink-2 dark:hover:bg-emerald-400 active:scale-[0.98]"
+                >
+                  Buscar
+                  <ArrowRightIcon className="w-4 h-4" />
+                </button>
+              </div>
+            </form>
           </div>
 
-          {/* ── Viñeta animada: el flujo de reserva en 6 segundos ──
-              Representación fija en modo claro (como captura de la app),
-              decorativa: oculta a lectores de pantalla. En mobile se
-              muestra compacta bajo el texto; en lg vuelve a su columna. */}
-          <div
-            className="relative animate-fade-in-up delay-300 select-none pointer-events-none w-full max-w-sm mx-auto lg:max-w-none"
-            aria-hidden="true"
-          >
-            {/* Resplandor ambiental detrás de la viñeta */}
-            <div className="absolute -inset-10 -z-10 rounded-full bg-emerald-400/15 dark:bg-emerald-500/10 blur-3xl animate-glow-pulse" />
-            <div className="animate-float relative">
-            <div className="bg-white border border-line rounded-xl p-6 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
-              {/* Tienda */}
-              <div className="flex items-center gap-3 mb-5 pb-5 border-b border-black/5">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
-                  T
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.05em] text-muted">Barbería</p>
-                  <p className="text-[15px] font-semibold text-ink leading-tight">Tenri Barber</p>
-                </div>
-                <span className="ml-auto inline-flex items-center gap-1 text-[13px]">
-                  <svg className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M11.48 3.5c.16-.38.88-.38 1.04 0l2.12 5.11 5.51.44c.44.04.62.59.28.88l-4.2 3.6 1.28 5.38c.1.43-.36.77-.74.54L12 16.56l-4.77 2.9c-.38.23-.84-.11-.74-.54l1.28-5.39-4.2-3.59a.47.47 0 0 1 .28-.88l5.51-.44 2.12-5.1z" />
-                  </svg>
-                  <span className="font-semibold text-ink tabular">4,8</span>
-                </span>
-              </div>
-
-              {/* Servicio */}
-              <div className="flex items-baseline justify-between mb-4">
-                <p className="text-sm font-semibold text-ink">Corte de Pelo Senior</p>
-                <p className="text-xs text-muted tabular">45 min · $12.000</p>
-              </div>
-
-              {/* Horarios */}
-              <p className="text-[10px] font-bold uppercase tracking-[0.05em] text-muted mb-2">
-                Horarios disponibles
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                <span className="py-2.5 rounded-lg border border-line bg-white text-ink-2 text-center text-sm font-medium font-mono tabular">
-                  10:00
-                </span>
-                <span className="anim-slot-pick py-2.5 rounded-lg border text-center text-sm font-semibold font-mono tabular">
-                  10:30
-                </span>
-                <span className="py-2.5 rounded-lg border border-line bg-white text-ink-2 text-center text-sm font-medium font-mono tabular">
-                  11:15
-                </span>
-              </div>
-            </div>
-
-            {/* Toast de confirmación */}
-            <div className="anim-confirm-pop absolute -bottom-7 -left-4 bg-white border border-line rounded-xl px-4 py-3 shadow-[0_4px_16px_rgba(0,0,0,0.08)] flex items-center gap-3">
-              <span className="w-8 h-8 rounded-full bg-[#EDF3EC] border border-[#D3E5D2] flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4 text-[#346538]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </span>
-              <span>
-                <p className="text-[13px] font-semibold text-ink leading-tight">Cita confirmada</p>
-                <p className="text-[11px] text-muted tabular">mié 26 · 10:30 — Corte Senior</p>
-              </span>
-            </div>
-            </div>
+          {/* Foto real del rubro: reemplaza la maqueta de app dibujada
+              con divs que había antes. srcSet para no bajar 300 kB en
+              mobile; width/height evitan salto de layout. */}
+          <div className="animate-fade-in-up delay-300 lg:h-[clamp(360px,52vh,520px)]">
+            <img
+              src={heroBarberia1100}
+              srcSet={`${heroBarberia640} 640w, ${heroBarberia1100} 1100w`}
+              sizes="(min-width: 1024px) 46vw, 100vw"
+              width={1100}
+              height={1450}
+              fetchPriority="high"
+              decoding="async"
+              alt="Sillón de barbero frente al mesón de herramientas en una barbería de ladrillo"
+              className="w-full h-full aspect-[4/3] sm:aspect-[16/10] lg:aspect-auto object-cover object-[62%_center] rounded-2xl ring-1 ring-black/5 dark:ring-white/10"
+            />
           </div>
         </div>
       </section>
 
-      {/* ============= DIRECTORIO ============= */}
-      <section className="max-w-6xl mx-auto px-6 pb-24 w-full">
-        <div className="pt-8 border-t border-line dark:border-slate-800/60">
+      {/* ============ DIRECTORIO ============ */}
+      <section ref={directorioRef} className="w-full scroll-mt-16 sm:scroll-mt-20">
+
+        {/* Filtros pegados: quedan a mano mientras se recorre la grilla */}
+        <div className="sticky top-16 sm:top-20 z-30 border-y border-line dark:border-slate-800/70 bg-paper/90 dark:bg-night/90 backdrop-blur-md">
+          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-3">
+            <div
+              className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto no-scrollbar"
+              role="group"
+              aria-label="Filtrar por tipo de local"
+            >
+              <button type="button" onClick={() => setFiltroRubro("")} className={pillFiltro(!filtroRubro)}>
+                Todas
+              </button>
+              {rubros.map((r) => (
+                <button
+                  key={r.clave}
+                  type="button"
+                  onClick={() => setFiltroRubro(filtroRubro === r.clave ? "" : r.clave)}
+                  className={pillFiltro(filtroRubro === r.clave)}
+                >
+                  {r.etiqueta}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={toggleCercaDeMi}
+              disabled={buscandoUbicacion}
+              aria-pressed={!!ubicacion}
+              className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-60 ${
+                ubicacion
+                  ? "bg-[#EDF3EC] border-[#CFE2CE] text-[#1F6F5C] dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-400"
+                  : "bg-white border-line text-ink-2 hover:border-line-strong dark:bg-card dark:border-slate-800 dark:text-slate-300"
+              }`}
+            >
+              {buscandoUbicacion ? (
+                <span className="w-3.5 h-3.5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+              ) : (
+                <MapPinIcon className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">Cerca de mí</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 pt-10 pb-20 lg:pb-28">
           <div className="flex items-baseline justify-between gap-4 mb-6">
-            <h2 className="text-xl font-semibold text-ink dark:text-white tracking-tight">
-              {busqueda
-                ? `Resultados para "${busqueda}"`
-                : ubicacion
-                ? "Cerca de ti"
-                : "Explora las tiendas"}
+            <h2 className="text-xl sm:text-2xl font-bold text-ink dark:text-white tracking-tight">
+              {tituloDirectorio}
             </h2>
             {!cargando && (
-              <p className="text-sm text-faint font-medium tabular shrink-0">
-                {busqueda || filtroRubro || ubicacion
+              <p className="shrink-0 font-mono text-[13px] text-muted dark:text-slate-500 tabular">
+                {filtrosActivos
                   ? `${barberiasFiltradas.length} ${barberiasFiltradas.length === 1 ? "resultado" : "resultados"}`
                   : `${paginacion.total} ${paginacion.total === 1 ? "tienda" : "tiendas"}`}
               </p>
             )}
           </div>
 
-          {/* Barra de filtros: tabs de rubro + "Cerca de mí" */}
-          <div className="flex items-end justify-between gap-4 border-b border-line dark:border-slate-800/60 mb-8">
-            <nav className="flex items-center gap-5 overflow-x-auto no-scrollbar" aria-label="Filtrar por tipo de local">
-              <button onClick={() => setFiltroRubro("")} className={tabClase(!filtroRubro)}>
-                Todas
+          {cargando ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3, 4, 5, 6].map((n) => <TarjetaEsqueleto key={n} />)}
+            </div>
+          ) : errorCarga && barberias.length === 0 ? (
+            <div className="rounded-2xl border border-line dark:border-slate-800/70 bg-white dark:bg-card px-6 py-16 text-center">
+              <h3 className="text-xl font-semibold text-ink dark:text-white mb-2">
+                No pudimos cargar el directorio
+              </h3>
+              <p className="text-muted dark:text-slate-400 max-w-md mx-auto mb-6">
+                Hubo un problema de conexión. Inténtalo de nuevo en unos segundos.
+              </p>
+              <button
+                type="button"
+                onClick={() => cargarPagina(1)}
+                className="rounded-full bg-ink dark:bg-emerald-500 px-6 py-3 text-sm font-bold text-white dark:text-abyss transition-all hover:bg-ink-2 dark:hover:bg-emerald-400 active:scale-[0.98]"
+              >
+                Reintentar
               </button>
-              {rubros.map((r) => (
-                <button
-                  key={r.clave}
-                  onClick={() => setFiltroRubro(filtroRubro === r.clave ? "" : r.clave)}
-                  className={tabClase(filtroRubro === r.clave)}
-                >
-                  {r.etiqueta}
-                </button>
-              ))}
-            </nav>
-
-            <button
-              onClick={toggleCercaDeMi}
-              disabled={buscandoUbicacion}
-              className={`shrink-0 mb-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-60 ${
-                ubicacion
-                  ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-400"
-                  : "bg-white dark:bg-card border-line dark:border-slate-800 text-muted dark:text-slate-400 hover:text-emerald-700 hover:border-emerald-200 dark:hover:text-emerald-400"
-              }`}
-            >
-              {buscandoUbicacion ? (
-                <span className="w-3.5 h-3.5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+            </div>
+          ) : barberiasFiltradas.length === 0 && filtrosActivos && hayMas ? (
+            <div className="px-6 py-16 text-center">
+              {errorCarga ? (
+                // Si falla la carga automática de páginas durante la búsqueda,
+                // el auto-load se detiene: sin este retry el "Buscando…" quedaba
+                // pegado para siempre.
+                <>
+                  <p className="text-muted dark:text-slate-400 mb-6">
+                    No pudimos revisar todas las tiendas por un problema de conexión.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={cargarMas}
+                    className="rounded-full bg-ink dark:bg-emerald-500 px-6 py-3 text-sm font-bold text-white dark:text-abyss transition-all hover:bg-ink-2 dark:hover:bg-emerald-400 active:scale-[0.98]"
+                  >
+                    Reintentar
+                  </button>
+                </>
               ) : (
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                </svg>
+                <p className="inline-flex items-center gap-2.5 text-muted dark:text-slate-400">
+                  <span className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                  Buscando en todas las tiendas
+                </p>
               )}
-              Cerca de mí
-            </button>
+            </div>
+          ) : barberiasFiltradas.length === 0 ? (
+            <div className="rounded-2xl border border-line dark:border-slate-800/70 bg-white dark:bg-card px-6 py-16 text-center">
+              <span className="grid place-items-center w-14 h-14 mx-auto mb-5 rounded-2xl bg-paper dark:bg-card-2 border border-line dark:border-slate-800">
+                <SearchIcon className="w-6 h-6 text-faint" />
+              </span>
+              <h3 className="text-xl font-semibold text-ink dark:text-white mb-2">
+                No encontramos tiendas
+              </h3>
+              <p className="text-muted dark:text-slate-400 max-w-md mx-auto">
+                {busqueda
+                  ? `Nada coincide con "${busqueda}". Prueba con otro nombre o servicio.`
+                  : filtroRubro
+                  ? "Todavía no hay tiendas de este rubro en la plataforma."
+                  : "Todavía no hay tiendas registradas en la plataforma."}
+              </p>
+              {(busqueda || filtroRubro) && (
+                <button
+                  type="button"
+                  onClick={() => { setBusqueda(""); setFiltroRubro(""); }}
+                  className="mt-6 rounded-full border border-line dark:border-slate-700 bg-white dark:bg-card-2 px-5 py-2.5 text-sm font-semibold text-ink-2 dark:text-slate-300 transition-all hover:border-line-strong active:scale-[0.98]"
+                >
+                  Limpiar filtros
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {destacada && (
+                  <TiendaDestacada
+                    key={destacada.id}
+                    barberia={destacada}
+                    esFavorita={favoritos.has(destacada.id)}
+                    onToggleFavorito={toggleFavorito}
+                  />
+                )}
+                {resto.map((barberia, idx) => (
+                  <TarjetaTienda
+                    key={barberia.id}
+                    barberia={barberia}
+                    index={idx}
+                    esFavorita={favoritos.has(barberia.id)}
+                    onToggleFavorito={toggleFavorito}
+                  />
+                ))}
+              </div>
+
+              {hayMas && !filtrosActivos && (
+                <div className="mt-10 text-center">
+                  <button
+                    type="button"
+                    onClick={cargarMas}
+                    disabled={cargandoMas}
+                    className="inline-flex items-center gap-2 rounded-full border border-line dark:border-slate-700 bg-white dark:bg-card px-7 py-3 text-sm font-semibold text-ink-2 dark:text-slate-300 transition-all hover:border-line-strong dark:hover:border-slate-600 active:scale-[0.98]"
+                  >
+                    {cargandoMas && (
+                      <span className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                    )}
+                    Mostrar más tiendas
+                    <span className="font-mono text-[13px] font-normal text-faint tabular">
+                      {barberias.length} de {paginacion.total}
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              {errorCarga && barberias.length > 0 && (
+                <p className="mt-4 text-center text-sm text-[#9F2F2D] dark:text-rose-400">
+                  No se pudieron cargar más tiendas.
+                  <button type="button" onClick={cargarMas} className="ml-1 font-semibold underline">
+                    Reintentar
+                  </button>
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* ============ CÓMO SE RESERVA ============ */}
+      {/* Tres pasos sobre un riel, con desfase vertical: no son tres
+          tarjetas iguales, y el orden de lectura queda explícito. */}
+      <section className="w-full border-t border-line dark:border-slate-800/70">
+        <div className="max-w-7xl mx-auto px-6 py-16 lg:pt-20 lg:pb-20">
+          <h2 className="text-2xl sm:text-3xl font-bold text-ink dark:text-white tracking-tight max-w-lg leading-tight">
+            Cómo se reserva
+          </h2>
+
+          <ol className="mt-10 grid gap-10 lg:gap-6 lg:grid-cols-3 border-t border-line dark:border-slate-800/70 pt-8">
+            {[
+              {
+                icono: <ScissorsIcon className="w-5 h-5" />,
+                titulo: "Elige la tienda",
+                texto: "Cada local muestra su catálogo con precios y duración de cada servicio.",
+              },
+              {
+                icono: <ClockIcon className="w-5 h-5" />,
+                titulo: "Toma una hora libre",
+                texto: "El calendario deja elegir solo los bloques que el barbero tiene disponibles.",
+              },
+              {
+                icono: <CheckIcon className="w-5 h-5" />,
+                titulo: "Recibe la confirmación",
+                texto: "Te llega por correo y queda en Mis reservas, con opción de reagendar o cancelar.",
+              },
+            ].map((paso, i) => (
+              <PasoReserva key={paso.titulo} {...paso} orden={i} />
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ============ BANDA DE CUENTA ============ */}
+      {/* Único bloque oscuro de la página, con foto de fondo y velo:
+          cierra con una sola acción, distinta a la del hero. */}
+      <section className="w-full px-6 pb-16 lg:pb-24">
+        <div className="max-w-7xl mx-auto relative isolate overflow-hidden rounded-2xl bg-[#10201B]">
+          <img
+            src={bandaBarberia1800}
+            srcSet={`${bandaBarberia900} 900w, ${bandaBarberia1800} 1800w`}
+            sizes="100vw"
+            width={1800}
+            height={1000}
+            loading="lazy"
+            decoding="async"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 -z-10 w-full h-full object-cover opacity-30"
+          />
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 -z-10 bg-gradient-to-r from-[#10201B] via-[#10201B]/90 to-[#10201B]/40"
+          />
+
+          <div className="px-8 py-14 sm:px-12 lg:px-16 lg:py-20 max-w-xl">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight">
+              {estaLogueado
+                ? "Tus reservas, en un solo lugar"
+                : "Guarda tus favoritas y sigue tus reservas"}
+            </h2>
+            <p className="mt-3 text-[15px] text-white/70 leading-relaxed">
+              {estaLogueado
+                ? "Revisa las horas que tomaste, reagenda o cancela sin llamar al local."
+                : "Con una cuenta guardas las tiendas que te gustan y revisas tus horas cuando quieras."}
+            </p>
+
+            {estaLogueado ? (
+              <Link
+                to="/mis-reservas"
+                className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#10201B] transition-all hover:bg-white/90 active:scale-[0.98]"
+              >
+                Ver mis reservas
+                <ArrowRightIcon className="w-4 h-4" />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent("tenri:abrir-login", { detail: { registro: true } }))}
+                className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-[#10201B] transition-all hover:bg-white/90 active:scale-[0.98]"
+              >
+                Crear cuenta
+                <ArrowRightIcon className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
-
-        {cargando ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[1, 2, 3, 4, 5, 6].map((n) => <SkeletonCard key={n} />)}
-          </div>
-        ) : errorCarga && barberias.length === 0 ? (
-          <div className="text-center py-24 animate-fade-in-up">
-            <h3 className="text-2xl font-semibold text-ink dark:text-white mb-2">
-              No pudimos cargar el directorio
-            </h3>
-            <p className="text-muted dark:text-slate-400 max-w-md mx-auto mb-6">
-              Hubo un problema de conexión. Inténtalo de nuevo en unos segundos.
-            </p>
-            <button
-              onClick={() => cargarPagina(1)}
-              className="px-7 py-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white dark:text-abyss font-bold text-sm transition-colors active:scale-[0.98]"
-            >
-              Reintentar
-            </button>
-          </div>
-        ) : barberiasFiltradas.length === 0 && filtrosActivos && hayMas ? (
-          <div className="text-center py-24 animate-fade-in-up">
-            {errorCarga ? (
-              // Si falla la carga automática de páginas durante la búsqueda,
-              // el auto-load se detiene: sin este retry el "Buscando…" quedaba
-              // pegado para siempre.
-              <>
-                <p className="text-muted dark:text-slate-400 mb-6">
-                  No pudimos revisar todas las tiendas por un problema de conexión.
-                </p>
-                <button
-                  onClick={cargarMas}
-                  className="px-7 py-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white dark:text-abyss font-bold text-sm transition-colors active:scale-[0.98]"
-                >
-                  Reintentar
-                </button>
-              </>
-            ) : (
-              <p className="text-muted dark:text-slate-400">
-                Buscando en todas las tiendas…
-              </p>
-            )}
-          </div>
-        ) : barberiasFiltradas.length === 0 ? (
-          <div className="text-center py-24 animate-fade-in-up">
-            <div className="w-14 h-14 mx-auto bg-paper dark:bg-card rounded-xl flex items-center justify-center mb-5 border border-line dark:border-slate-800">
-              <SearchIcon className="w-6 h-6 text-faint" />
-            </div>
-            <h3 className="text-2xl font-semibold text-ink dark:text-white mb-2">
-              No encontramos tiendas
-            </h3>
-            <p className="text-muted dark:text-slate-400 max-w-md mx-auto">
-              {busqueda
-                ? `No hay resultados para "${busqueda}". Prueba con otro término.`
-                : filtroRubro
-                ? `Aún no hay tiendas de este rubro en la plataforma.`
-                : "Aún no hay tiendas registradas en la plataforma."}
-            </p>
-            {(busqueda || filtroRubro) && (
-              <button
-                onClick={() => { setBusqueda(""); setFiltroRubro(""); }}
-                className="mt-6 px-5 py-2.5 text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
-              >
-                Limpiar filtros
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {barberiasFiltradas.map((barberia, idx) => (
-                <BarberiaCard
-                  key={barberia.id}
-                  barberia={barberia}
-                  index={idx}
-                  esFavorita={favoritos.has(barberia.id)}
-                  onToggleFavorito={toggleFavorito}
-                />
-              ))}
-            </div>
-
-            {hayMas && !filtrosActivos && (
-              <div className="text-center mt-10">
-                <button
-                  onClick={cargarMas}
-                  disabled={cargandoMas}
-                  className="inline-flex items-center gap-2 px-7 py-3 rounded-lg border border-line dark:border-slate-700 bg-white dark:bg-card text-ink-2 dark:text-slate-300 font-semibold text-sm hover:border-[#C9C7C1] dark:hover:border-slate-600 active:scale-[0.98] transition-all"
-                >
-                  {cargandoMas && (
-                    <span className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
-                  )}
-                  Mostrar más tiendas
-                  <span className="text-faint font-normal tabular">
-                    ({barberias.length} de {paginacion.total})
-                  </span>
-                </button>
-              </div>
-            )}
-
-            {errorCarga && barberias.length > 0 && (
-              <p className="text-center mt-4 text-sm text-[#9F2F2D] dark:text-rose-400">
-                No se pudieron cargar más tiendas.
-                <button onClick={cargarMas} className="underline font-semibold ml-1">
-                  Reintentar
-                </button>
-              </p>
-            )}
-          </>
-        )}
       </section>
     </div>
   );

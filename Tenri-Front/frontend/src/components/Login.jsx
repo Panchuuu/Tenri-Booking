@@ -17,10 +17,12 @@ import { XIcon } from "./Icons";
 // Esto bloquea "fgaete@tenricl" porque "tenricl" no tiene "."
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-export default function Login({ onClose, onLoginSuccess }) {
+export default function Login({ onClose, onLoginSuccess, modoRegistro = false }) {
   const { login } = useAuth();
 
-  const [esRegistro, setEsRegistro] = useState(false);
+  // modoRegistro: quien abre el modal decide con qué pestaña parte
+  // (la landing lo abre en "crear cuenta", el navbar en "ingresar").
+  const [esRegistro, setEsRegistro] = useState(modoRegistro);
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

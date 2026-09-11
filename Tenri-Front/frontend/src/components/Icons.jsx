@@ -170,3 +170,59 @@ export const PlusIcon = (props) => (
     <line x1="5" y1="12" x2="19" y2="12"></line>
   </Icon>
 );
+
+// ============================================================
+// Glifos del directorio público (landing y detalle de tienda)
+// ============================================================
+// Mismo trazo que el resto del set: 24x24, stroke 2, redondeado.
+// Star y Heart necesitan relleno variable, así que no pasan por el
+// wrapper <Icon /> (que fija fill="none").
+
+export const MapPinIcon = (props) => (
+  <Icon {...props}>
+    <path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0z"></path>
+    <circle cx="12" cy="10.5" r="3"></circle>
+  </Icon>
+);
+
+export const ArrowRightIcon = (props) => (
+  <Icon {...props}>
+    <path d="M13 7l5 5-5 5"></path>
+    <path d="M5 12h13"></path>
+  </Icon>
+);
+
+export const CheckIcon = (props) => (
+  <Icon {...props}>
+    <path d="M5 13l4 4L19 7"></path>
+  </Icon>
+);
+
+export const ClockIcon = (props) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="9"></circle>
+    <path d="M12 7.5V12l3 2"></path>
+  </Icon>
+);
+
+export const StarIcon = ({ className = "w-4 h-4", ...props }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+    <path d="M11.48 3.5c.16-.38.88-.38 1.04 0l2.12 5.11 5.51.44c.44.04.62.59.28.88l-4.2 3.6 1.28 5.38c.1.43-.36.77-.74.54L12 16.56l-4.77 2.9c-.38.23-.84-.11-.74-.54l1.28-5.39-4.2-3.59a.47.47 0 0 1 .28-.88l5.51-.44 2.12-5.1z" />
+  </svg>
+);
+
+export const HeartIcon = ({ className = "w-4 h-4", relleno = false, ...props }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill={relleno ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...props}
+  >
+    <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+  </svg>
+);

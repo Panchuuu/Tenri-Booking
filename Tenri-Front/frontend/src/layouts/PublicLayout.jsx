@@ -20,7 +20,21 @@ export default function PublicLayout() {
   const location = useLocation();
 
   const [mostrarLogin, setMostrarLogin] = useState(false);
+  const [loginEnRegistro, setLoginEnRegistro] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  // El modal de sesión vive acá, pero la landing también necesita
+  // abrirlo (su banda de cierre invita a crear cuenta). En vez de
+  // subir el estado a un contexto para un solo caso, la página avisa
+  // por un evento y este layout decide.
+  useEffect(() => {
+    const abrir = (e) => {
+      setLoginEnRegistro(!!e.detail?.registro);
+      setMostrarLogin(true);
+    };
+    window.addEventListener("tenri:abrir-login", abrir);
+    return () => window.removeEventListener("tenri:abrir-login", abrir);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -132,7 +146,7 @@ export default function PublicLayout() {
               </>
             ) : (
               <button
-                onClick={() => setMostrarLogin(true)}
+                onClick={() => { setLoginEnRegistro(false); setMostrarLogin(true); }}
                 className="px-4 sm:px-5 py-2 sm:py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-abyss text-xs sm:text-sm font-bold rounded-full transition-all shadow-none hover:shadow-[0_4px_16px_rgba(0,0,0,0.05)] hover:shadow-emerald-500/20 whitespace-nowrap"
               >
                 Iniciar sesión
@@ -172,6 +186,7 @@ export default function PublicLayout() {
 
       {mostrarLogin && (
         <Login
+          modoRegistro={loginEnRegistro}
           onClose={() => setMostrarLogin(false)}
           onLoginSuccess={() => setMostrarLogin(false)}
         />

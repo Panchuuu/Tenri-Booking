@@ -39,7 +39,10 @@ class BarberiaController extends Controller
             // para el público.
             Barberia::query()
                 ->activas()
-                ->with('servicios:id,barberia_id,nombre')
+                // El precio viaja junto al nombre: el directorio público
+                // muestra "desde $X" por tienda y, sin esta columna, el
+                // frontend no tiene con qué calcularlo (antes pintaba NaN).
+                ->with('servicios:id,barberia_id,nombre,precio')
                 ->withAvg(['citas as calificacion_promedio' => fn ($q) => $q->whereNotNull('calificacion')], 'calificacion')
                 ->withCount(['citas as total_resenas' => fn ($q) => $q->whereNotNull('calificacion')])
                 ->orderBy('nombre')

@@ -206,3 +206,26 @@ espaciado, no del tamaño: dos niveles contiguos pueden compartir tamaño si dif
 
 **Criterio de cierre:** si al quitar un borde, una sombra o un color la pantalla sigue leyéndose igual
 de bien, quitarlo. El descanso visual del operador es la métrica.
+
+---
+
+## Anexo: lenguaje visual de la landing pública (2026-09-10)
+
+La landing (`/`) se rediseñó desde cero porque la versión anterior se leía como plantilla
+genérica. Estas reglas aplican al **directorio público** (landing y detalle de tienda); los
+paneles internos siguen con lo de arriba.
+
+| Decisión | Regla |
+|---|---|
+| Fotografía | Foto real del rubro en el hero y en la banda de cierre. **Nunca** una maqueta de la app dibujada con `div`s: la captura falsa no comunica el negocio y envejece mal. Los archivos viven en `src/assets/barberia-*.webp` con `srcSet` de dos anchos. |
+| Acento | Uno solo: esmeralda, y solo en estados, enlaces y foco. Los botones primarios van en tinta (`bg-ink`, blanco encima) porque pasa AA sobre el hueso; esmeralda sobre blanco no llega a 4.5:1 en texto chico. En dark el primario sí es esmeralda con texto `abyss`. |
+| Radios | Contenedores `rounded-2xl` (16 px), interactivos en pill (`rounded-full`). Sin mezclar otros radios en la misma pantalla. |
+| Superficie oscura | Un único bloque oscuro por página (la banda de cierre, `#10201B`). El resto de la página no invierte el tema. |
+| Números | Precios, notas y distancias en `font-mono` con `tabular`: se comparan en columna sin bailar. |
+| Movimiento | Solo CSS: reveals con `useReveal` (IntersectionObserver) y hover/active en transiciones. Sin librerías de animación ni listeners de scroll. Todo colapsa con `prefers-reduced-motion`. |
+| Prohibido | Glow ambiental (`blur-3xl` de color), subrayados decorativos, labels `uppercase tracking` sobre cada titular, tiras de metadatos separadas por `·`, guiones largos y claims sin respaldo ("en 30 segundos"). |
+| Datos antes que adornos | Cada tarjeta muestra lo que la tienda tiene de verdad: rubro, nota con cantidad de reseñas, dirección, servicios y "desde $X". Si un dato no existe, el bloque desaparece en vez de mostrar relleno. |
+
+**Estructura de la landing:** hero partido (texto + foto) → directorio con barra de filtros
+pegada y primera tarjeta al ancho doble → escalera de tres pasos → banda oscura con una sola
+acción. Cuatro familias de layout distintas, a propósito: ninguna sección repite la forma de otra.
