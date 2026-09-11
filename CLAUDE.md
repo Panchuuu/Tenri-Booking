@@ -71,13 +71,15 @@ Estados: `pendiente` → `confirmada` → `finalizada` | `cancelada`.
 
 ### API (`routes/api.php`)
 
-Un solo archivo de rutas, agrupado por middleware: públicas → `auth:sanctum` → `role:superadmin` / `role:admin` / `role:admin,barbero` → comunes. Detalle completo en `docs/API_ENDPOINTS.md` (mantenerlo al día al tocar rutas).
+Un solo archivo de rutas, agrupado por middleware: canal del panel (`firma.panel`) → públicas → `auth:sanctum` → `role:superadmin` / `role:admin` / `role:admin,barbero` → comunes. Detalle completo en `docs/API_ENDPOINTS.md` (mantenerlo al día al tocar rutas).
+
+El grupo `/integracion/panel/*` es server-to-server: lo llama el backend del panel de tenri.cl firmando cada request con HMAC sobre método + ruta + cuerpo (`VerificarFirmaPanel`, clave en `PANEL_INTEGRATION_KEY`). Contrato, vector de prueba compartido y checklist en `docs/INTEGRACION-PANEL.md` — es la fuente de verdad para el lado que llama.
 
 Convenciones:
 - Validaciones en **FormRequests** (`app/Http/Requests/`) con mensajes en español; cross-field via `withValidator()`.
 - Uploads multipart usan `POST` + `_method=PUT` (Laravel no parsea multipart en PUT real).
 - Rate limits deliberados: login/registro `throttle:10,1`, escrituras de citas/calificaciones `throttle:20,1`, uploads y favoritos `throttle:30,1`. No quitarlos.
-- Suspensión de usuarios y remoción de barberos revocan tokens Sanctum activos.
+- Revocan tokens Sanctum activos: suspender o eliminar un usuario y suspender una barbería (arrastra a todos sus usuarios). Remover a un barbero del equipo **no** revoca su token: solo cancela sus citas activas y lo degrada a `cliente`.
 
 ### Frontend (`Tenri-Front/frontend/src/`)
 
@@ -96,4 +98,4 @@ Convenciones:
 
 ## Documentación a mantener sincronizada
 
-Al cambiar rutas o features, actualizar según corresponda: `docs/API_ENDPOINTS.md` (endpoints), `README.md` (features visibles), `docs/DEPLOY.md` / `README-SERVIDOR.md` (infra).
+Al cambiar rutas o features, actualizar según corresponda: `docs/API_ENDPOINTS.md` (endpoints), `docs/INTEGRACION-PANEL.md` (canal con el panel), `README.md` (features visibles), `docs/DEPLOY.md` / `README-SERVIDOR.md` (infra).

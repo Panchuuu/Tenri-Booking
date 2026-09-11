@@ -124,6 +124,7 @@ Tenri-Barberia/
 ├── .github/workflows/deploy.yml    # CI/CD completo
 ├── docs/
 │   ├── API_ENDPOINTS.md            # Documentación de la API
+│   ├── INTEGRACION-PANEL.md        # Contrato del canal firmado con el panel de tenri.cl
 │   └── DEPLOY.md                   # Runbook de deploy
 ├── README-SERVIDOR.md              # Comandos del servidor (DirectAdmin)
 ├── GUIA-ESTILOS-LIGHT.md           # Guía de diseño del frontend
@@ -228,13 +229,14 @@ Para producción existe `.env.production.example` como plantilla.
 
 ## API
 
-La documentación de los 40+ endpoints está en [`docs/API_ENDPOINTS.md`](docs/API_ENDPOINTS.md), organizados por middleware:
+La documentación de los 56 endpoints está en [`docs/API_ENDPOINTS.md`](docs/API_ENDPOINTS.md), organizados por middleware:
 
 - **Públicos**: rubros, barberías (con slug), servicios, barberos, disponibilidad
 - **`auth:sanctum`**: perfil, reservas, favoritos, calificaciones, reagendar/cancelar
 - **`role:admin`**: finanzas, equipo, servicios, bloqueos, Mi Tienda/configuración
 - **`role:admin,barbero`**: agenda y estados de citas
 - **`role:superadmin`**: CRUD de barberías y usuarios de la plataforma
+- **`firma.panel`**: canal server-to-server con el panel de tenri.cl (métricas, gestión y suspensión), firmado con HMAC — contrato en [`docs/INTEGRACION-PANEL.md`](docs/INTEGRACION-PANEL.md)
 
 ---
 
