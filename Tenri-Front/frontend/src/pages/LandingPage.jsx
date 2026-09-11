@@ -5,6 +5,7 @@ import apiFetch from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import { distanciaKm, formatearDistancia, obtenerUbicacion } from "../utils/geo";
 import useReveal from "../hooks/useReveal";
+import useSeo from "../hooks/useSeo";
 import {
   SearchIcon,
   MapPinIcon,
@@ -342,6 +343,27 @@ function TarjetaEsqueleto() {
 export default function LandingPage() {
   const { estaLogueado } = useAuth();
   const directorioRef = useRef(null);
+
+  // El buscador interno es una acción real de esta página (?q=...), así
+  // que se declara: Google puede ofrecerla como sitelinks searchbox.
+  useSeo({
+    ruta: "/",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "Tenri Booking",
+      url: "https://booking.tenri.cl/",
+      inLanguage: "es-CL",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: {
+          "@type": "EntryPoint",
+          urlTemplate: "https://booking.tenri.cl/?q={search_term_string}",
+        },
+        "query-input": "required name=search_term_string",
+      },
+    },
+  });
   const campoBusqueda = useRef(null);
 
   // ── Los filtros viven en la URL ──

@@ -5,6 +5,7 @@ import ServiceCard from "../components/ServiceCard";
 import BookingModal from "../components/BookingModal";
 import { ArrowLeftIcon } from "../components/Icons";
 import useReveal from "../hooks/useReveal";
+import useSeo from "../hooks/useSeo";
 
 // ============================================================
 // 📄 BARBERIA DETALLE — Fase 3 visual
@@ -37,6 +38,91 @@ export default function BarberiaDetallePage() {
     useApi(`/barberias/${slug}`, { skip: !slug });
 
   const { data: servicios, cargando } = useApi(`/servicios?barberia=${slug}`, { skip: !slug });
+
+  // ── Ficha para el buscador ──
+  // Cada tienda es la página que la gente busca por su nombre, así que
+  // lleva su propio título, descripción y datos estructurados. Se espera
+  // a tener los datos (listo) para no publicar una ficha a medias.
+  const precios = (servicios || []).map((s) => Number(s?.precio)).filter((p) => p > 0);
+  const desde = precios.length ? Math.min(...precios) : null;
+  const rubroTexto = barberia?.rubro_nombre || "Barbería";
+
+  useSeo({
+    listo: !!barberia,
+    ruta: `/barberia/${slug}`,
+    titulo: barberia ? `${barberia.nombre} · ${rubroTexto} con hora online` : undefined,
+    descripcion: barberia
+      ? [
+          `Reserva tu hora en ${barberia.nombre}`,
+          barberia.direccion ? ` (${barberia.direccion})` : "",
+          ". ",
+          precios.length
+            ? `${precios.length} ${precios.length === 1 ? "servicio" : "servicios"} desde $${desde.toLocaleString("es-CL")}. `
+            : "",
+          "Elige el servicio, el día y la hora, y recibe la confirmación por correo.",
+        ].join("")
+      : undefined,
+    imagen: barberia?.logo_url || undefined,
+    jsonLd: barberia
+      ? {
+          "@context": "https://schema.org",
+          // El tipo cambia según el rubro: un spa no es una peluquería.
+          "@type": {
+            barberia: "HairSalon",
+            peluqueria: "HairSalon",
+            salon_belleza: "BeautySalon",
+            centro_estetica: "HealthAndBeautyBusiness",
+            spa: "DaySpa",
+            perfumeria: "Store",
+          }[barberia.rubro] || "HealthAndBeautyBusiness",
+          name: barberia.nombre,
+          url: `https://booking.tenri.cl/barberia/${barberia.slug}`,
+          ...(barberia.logo_url ? { image: barberia.logo_url } : {}),
+          ...(barberia.direccion
+            ? {
+                address: {
+                  "@type": "PostalAddress",
+                  streetAddress: barberia.direccion,
+                  addressCountry: "CL",
+                },
+              }
+            : {}),
+          ...(barberia.latitud != null && barberia.longitud != null
+            ? {
+                geo: {
+                  "@type": "GeoCoordinates",
+                  latitude: barberia.latitud,
+                  longitude: barberia.longitud,
+                },
+              }
+            : {}),
+          // Solo con reseñas de verdad: declarar una nota inventada es
+          // motivo de penalización, y acá el dato ya está a la vista.
+          ...(barberia.total_resenas > 0 && barberia.calificacion_promedio != null
+            ? {
+                aggregateRating: {
+                  "@type": "AggregateRating",
+                  ratingValue: Math.round(Number(barberia.calificacion_promedio) * 10) / 10,
+                  reviewCount: barberia.total_resenas,
+                  bestRating: 5,
+                  worstRating: 1,
+                },
+              }
+            : {}),
+          ...(desde != null ? { priceRange: `Desde $${desde.toLocaleString("es-CL")}` } : {}),
+          ...((servicios || []).length
+            ? {
+                makesOffer: servicios.map((servicio) => ({
+                  "@type": "Offer",
+                  itemOffered: { "@type": "Service", name: servicio.nombre },
+                  price: servicio.precio,
+                  priceCurrency: "CLP",
+                })),
+              }
+            : {}),
+        }
+      : undefined,
+  });
 
   if (!barberia && errorBarberia) {
     // Solo un 404 significa "no existe": un 500 o un corte de red

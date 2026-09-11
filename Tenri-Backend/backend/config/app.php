@@ -59,6 +59,13 @@ return [
     'frontend_url' => explode(',', env('FRONTEND_URL', 'http://localhost:5173'))[0],
 
     /*
+    | Dominio público de la SPA para el sitemap. Vacío por defecto: en
+    | producción la SPA y la API comparten origen, así que el host de la
+    | petición ya es el correcto. Solo hace falta si eso cambia.
+    */
+    'sitio_publico_url' => env('SITIO_PUBLICO_URL'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------

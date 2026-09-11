@@ -1,6 +1,6 @@
 # 🌐 Tenri Barbería · API Endpoints
 
-> **Última revisión:** 2026-09-10 (contra `php artisan route:list --path=api` → 56 registros)
+> **Última revisión:** 2026-09-11 (contra `php artisan route:list --path=api` → 57 registros)
 > **Fuente:** [`Tenri-Backend/backend/routes/api.php`](../Tenri-Backend/backend/routes/api.php)
 > **Base URL en dev:** `http://127.0.0.1:8000/api` · **en producción:** `https://booking.tenri.cl/api`
 > **Auth:** Laravel Sanctum (Bearer token), salvo el canal del panel — que firma con HMAC y no usa Sanctum.
@@ -10,13 +10,13 @@
 | Grupo | Middleware | Endpoints |
 |---|---|---|
 | [🤝 Canal del panel](#-canal-del-panel-server-to-server) | `firma.panel` + `throttle:60,1` | 6 |
-| [🌍 Públicos](#-públicos-sin-auth) | — (login/registro con `throttle:10,1`) | 9 |
+| [🌍 Públicos](#-públicos-sin-auth) | — (login/registro con `throttle:10,1`) | 10 |
 | [🔐 Comunes autenticados](#-comunes-autenticados-authsanctum--cualquier-rol) | `auth:sanctum` | 6 |
 | [👤 Cliente¹](#-cliente-authsanctum--sin-role--ver-nota-) | `auth:sanctum` + `throttle:20,1` | 4 |
 | [✂️ Admin + Barbero](#️-admin--barbero-roleadminbarbero) | `role:admin,barbero` | 3 |
 | [🏪 Admin](#-admin-roleadmin) | `role:admin` | 18 |
 | [👑 Superadmin](#-superadmin-rolesuperadmin) | `role:superadmin` | 10 |
-| **Total** | | **56** |
+| **Total** | | **57** |
 
 > ¹ Los 4 endpoints "Cliente" están dentro de `auth:sanctum` **sin** un `role:` que los acote a `rol=cliente`. En la práctica cualquier usuario autenticado puede invocarlos (la propiedad se valida dentro del controller). Ver [Inconsistencias §4](#4-rol-de-las-rutas-cliente).
 
@@ -48,6 +48,7 @@ Quien llama es el backend del panel de tenri.cl (api.tenri.cl), no un navegador:
 | Método | URL | Controller@método | Descripción | Línea |
 |---|---|---|---|---|
 | GET | `/health` | `HealthController` | Salud del servicio: `200 {"status":"ok"}` / `503 {"status":"degraded"}`. En `local` agrega `checks` y `time`. Contrato compartido con el resto de la plataforma. | 36 |
+| GET | `/sitemap.xml` | `SitemapController` | Sitemap XML del directorio: la portada más cada barbería **activa**. Lo pide el buscador, no el frontend; `robots.txt` apunta a esta URL. Cachea 1 hora. | 40 |
 | GET | `/rubros` | `BarberiaController@rubros` | Catálogo de rubros (`clave`/`etiqueta`) para los filtros del landing y el select del panel. | 38 |
 | GET | `/servicios` | `ServicioController@index` | Servicios de una barbería. **`?barberia=slug` obligatorio** (`400` si falta). | 39 |
 | GET | `/barberos` | `BarberoController@index` | Barberos (scope `barberos()`: rol puro + dueños que atienden). Filtra con `?barberia=slug`. | 40 |

@@ -35,6 +35,10 @@ Route::middleware(['firma.panel', 'throttle:60,1'])->prefix('integracion/panel')
 // ({"status":"ok"|"degraded"}). Lo sondea el panel de estado de tenri.cl.
 Route::get('/health', \App\Http\Controllers\HealthController::class);
 
+// Sitemap del directorio público. Lo pide el buscador, no el frontend:
+// robots.txt (en public_html) apunta a esta URL.
+Route::get('/sitemap.xml', \App\Http\Controllers\SitemapController::class);
+
 Route::get('/rubros',    [BarberiaController::class, 'rubros']);
 Route::get('/servicios', [ServicioController::class, 'index']);
 Route::get('/barberos', [BarberoController::class, 'index']);

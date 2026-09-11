@@ -1,0 +1,13 @@
+# booking.tenri.cl — directorio público de reservas
+User-agent: *
+Allow: /
+
+# Paneles privados: exigen sesión, no aportan nada al buscador y no
+# deben competir con las fichas públicas de las tiendas.
+Disallow: /admin
+Disallow: /barbero
+Disallow: /superadmin
+Disallow: /mis-reservas
+
+# El sitemap lo genera la API, porque las tiendas entran y salen solas.
+Sitemap: https://booking.tenri.cl/api/sitemap.xml
