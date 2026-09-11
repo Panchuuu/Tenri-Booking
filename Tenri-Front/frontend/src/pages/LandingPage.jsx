@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import apiFetch from "../utils/api";
 import { useAuth } from "../context/AuthContext";
@@ -8,6 +8,7 @@ import useReveal from "../hooks/useReveal";
 import {
   SearchIcon,
   MapPinIcon,
+  XIcon,
   ArrowRightIcon,
   StarIcon,
   HeartIcon,
@@ -36,12 +37,28 @@ import bandaBarberia1800 from "../assets/barberia-banda-1800.webp";
 //  · Movimiento solo con CSS (reveals + hover). Sin librerías nuevas
 //    ni scroll listeners; useReveal usa IntersectionObserver.
 //
-// La lógica de datos es la de siempre: paginación acumulativa,
-// favoritos optimistas, orden por cercanía, búsqueda por nombre y
-// por servicio, y estados explícitos de carga, error y vacío.
+// Los filtros (q, rubro, orden, cerca, fav) viven en el query string:
+// el listado se comparte por link, el botón atrás funciona y recargar
+// no pierde nada. Cualquier filtro fuerza la carga del catálogo
+// completo, porque filtrar y ordenar es client-side y una tienda de la
+// página 3 sería invisible.
+//
+// El resto de la lógica es la de siempre: paginación acumulativa,
+// favoritos optimistas, búsqueda por nombre y por servicio, y estados
+// explícitos de carga, error y vacío.
 // ============================================================
 
 const CLP = (valor) => `$${Number(valor).toLocaleString("es-CL")}`;
+
+// Criterios de orden del directorio. "sugerido" es el de siempre:
+// favoritas primero y, si hay ubicación, las más cercanas arriba.
+const ORDENES = [
+  { clave: "sugerido", etiqueta: "Orden sugerido" },
+  { clave: "nota", etiqueta: "Mejor evaluadas" },
+  { clave: "cercania", etiqueta: "Más cercanas" },
+  { clave: "precio", etiqueta: "Precio más bajo" },
+  { clave: "nombre", etiqueta: "Nombre (A-Z)" },
+];
 
 /** Precio más bajo del catálogo de la tienda, para orientar sin prometer. */
 function precioDesde(barberia) {
@@ -324,8 +341,74 @@ function TarjetaEsqueleto() {
 
 export default function LandingPage() {
   const { estaLogueado } = useAuth();
-  const [busqueda, setBusqueda] = useState("");
   const directorioRef = useRef(null);
+  const campoBusqueda = useRef(null);
+
+  // ── Los filtros viven en la URL ──
+  // Fuente de verdad en el query string: un listado filtrado se puede
+  // compartir por link, el botón atrás del navegador funciona y recargar
+  // no pierde lo que la persona eligió.
+  const [params, setParams] = useSearchParams();
+  const filtroRubro = params.get("rubro") || "";
+  const orden = ORDENES.some((o) => o.clave === params.get("orden"))
+    ? params.get("orden")
+    : "sugerido";
+  const soloFavoritas = params.get("fav") === "1";
+  const quiereCercania = params.get("cerca") === "1" || orden === "cercania";
+
+  // Un click en un filtro empuja historial (el atrás deshace ese click);
+  // el tipeo reemplaza, porque si no cada tecla sería un paso atrás.
+  const actualizarParams = useCallback(
+    (cambios, { reemplazar = false } = {}) => {
+      const siguiente = new URLSearchParams(params);
+      for (const [clave, valor] of Object.entries(cambios)) {
+        if (!valor) siguiente.delete(clave);
+        else siguiente.set(clave, valor);
+      }
+      setParams(siguiente, { replace: reemplazar });
+    },
+    [params, setParams],
+  );
+
+  // El texto se escribe en local y baja a la URL con retardo: sin esto
+  // cada tecla escribiría en la barra de direcciones.
+  const [busqueda, setBusqueda] = useState(() => params.get("q") || "");
+  const ultimoQEscrito = useRef(params.get("q") || "");
+
+  useEffect(() => {
+    const nuevo = busqueda.trim();
+    if ((params.get("q") || "") === nuevo) return;
+    const id = setTimeout(() => {
+      ultimoQEscrito.current = nuevo;
+      actualizarParams({ q: nuevo }, { reemplazar: true });
+    }, 400);
+    return () => clearTimeout(id);
+  }, [busqueda, params, actualizarParams]);
+
+  // Y al revés: si la URL cambió por fuera (atrás, adelante, link
+  // pegado), el campo se pone al día. El ref distingue ese caso de
+  // nuestra propia escritura, para no borrar lo que se está tipeando.
+  useEffect(() => {
+    const enUrl = params.get("q") || "";
+    if (enUrl !== ultimoQEscrito.current) {
+      ultimoQEscrito.current = enUrl;
+      setBusqueda(enUrl);
+    }
+  }, [params]);
+
+  // "/" enfoca el buscador, como en cualquier directorio.
+  useEffect(() => {
+    const alTeclear = (e) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const activo = document.activeElement;
+      const tag = activo?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || activo?.isContentEditable) return;
+      e.preventDefault();
+      campoBusqueda.current?.focus();
+    };
+    window.addEventListener("keydown", alTeclear);
+    return () => window.removeEventListener("keydown", alTeclear);
+  }, []);
 
   // ❤️ Favoritos del usuario (solo IDs; los corazones se pintan sobre
   // las barberías ya cargadas).
@@ -335,9 +418,27 @@ export default function LandingPage() {
   const [ubicacion, setUbicacion] = useState(null);
   const [buscandoUbicacion, setBuscandoUbicacion] = useState(false);
 
-  // 🏪 Rubros (Barbería, Salón de belleza, Perfumería…)
+  // Si el link traía cerca=1, recuperamos la ubicación sin abrir el
+  // diálogo del navegador: pedir permiso al cargar es agresivo, así que
+  // solo se reusa cuando ya estaba concedido.
+  useEffect(() => {
+    if (!quiereCercania || ubicacion || buscandoUbicacion) return;
+    let cancelado = false;
+    (async () => {
+      try {
+        const permiso = await navigator.permissions?.query({ name: "geolocation" });
+        if (permiso && permiso.state !== "granted") return;
+        const coords = await obtenerUbicacion();
+        if (!cancelado) setUbicacion(coords);
+      } catch {
+        // Sin permiso el filtro queda apagado; el botón sigue disponible.
+      }
+    })();
+    return () => { cancelado = true; };
+  }, [quiereCercania, ubicacion, buscandoUbicacion]);
+
+  // 🏪 Catálogo de rubros (Barbería, Salón de belleza, Perfumería…)
   const [rubros, setRubros] = useState([]);
-  const [filtroRubro, setFiltroRubro] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -401,7 +502,11 @@ export default function LandingPage() {
 
   // Búsqueda, filtro de rubro u orden por cercanía: todos son
   // client-side, así que necesitan el catálogo completo cargado.
-  const filtrosActivos = !!(busqueda.trim() || filtroRubro || ubicacion);
+  // Acotan el listado (cambian cuántas tiendas se ven).
+  const filtrosQueAcotan = !!(busqueda.trim() || filtroRubro || soloFavoritas);
+  // Además obligan a tener el catálogo completo: ordenar por nota con
+  // media página cargada daría un "mejor evaluada" falso.
+  const filtrosActivos = !!(filtrosQueAcotan || ubicacion || orden !== "sugerido");
 
   // Mientras hay un filtro activo, cargamos el resto de las páginas:
   // sin esto una barbería en una página aún no cargada era invisible
@@ -468,16 +573,42 @@ export default function LandingPage() {
   const toggleCercaDeMi = async () => {
     if (ubicacion) {
       setUbicacion(null);
+      // Si el orden era por cercanía, deja de tener sentido sin ubicación.
+      actualizarParams({ cerca: "", orden: orden === "cercania" ? "" : orden });
       return;
     }
     setBuscandoUbicacion(true);
     try {
       setUbicacion(await obtenerUbicacion());
+      actualizarParams({ cerca: "1" });
     } catch (e) {
       toast.error(e.message);
     } finally {
       setBuscandoUbicacion(false);
     }
+  };
+
+  /** Cambia el criterio de orden. "Más cercanas" necesita ubicación. */
+  const cambiarOrden = async (nuevo) => {
+    if (nuevo === "cercania" && !ubicacion) {
+      setBuscandoUbicacion(true);
+      try {
+        setUbicacion(await obtenerUbicacion());
+      } catch (e) {
+        toast.error(e.message);
+        return;
+      } finally {
+        setBuscandoUbicacion(false);
+      }
+    }
+    actualizarParams({ orden: nuevo === "sugerido" ? "" : nuevo });
+  };
+
+  const limpiarFiltros = () => {
+    setBusqueda("");
+    ultimoQEscrito.current = "";
+    setUbicacion(null);
+    setParams(new URLSearchParams(), { replace: true });
   };
 
   const irAlDirectorio = (e) => {
@@ -500,6 +631,9 @@ export default function LandingPage() {
     if (filtroRubro) {
       lista = lista.filter((b) => b?.rubro === filtroRubro);
     }
+    if (soloFavoritas) {
+      lista = lista.filter((b) => favoritos.has(b.id));
+    }
 
     const conDistancia = lista.map((b) => ({
       ...b,
@@ -509,17 +643,39 @@ export default function LandingPage() {
           : null,
     }));
 
-    // Orden: favoritas primero; con "cerca de mí" activo, por distancia
-    // (las sin coordenadas van al final); si no, el alfabético del backend.
+    // Lo que no se puede medir va al final en todos los criterios: una
+    // tienda sin nota no es peor que una con 3,0, pero tampoco compite.
+    const alFinal = (valor) => (valor == null ? Infinity : valor);
+    const porNombre = (a, b) => (a.nombre || "").localeCompare(b.nombre || "", "es");
+
+    const criterios = {
+      nota: (a, b) =>
+        alFinal(a.total_resenas ? -Number(a.calificacion_promedio) : null) -
+          alFinal(b.total_resenas ? -Number(b.calificacion_promedio) : null) ||
+        (b.total_resenas || 0) - (a.total_resenas || 0) ||
+        porNombre(a, b),
+      cercania: (a, b) => alFinal(a._distancia) - alFinal(b._distancia) || porNombre(a, b),
+      precio: (a, b) => alFinal(precioDesde(a)) - alFinal(precioDesde(b)) || porNombre(a, b),
+      nombre: porNombre,
+    };
+
+    if (criterios[orden]) {
+      // El criterio elegido manda: meter las favoritas arriba acá haría
+      // que "mejor evaluadas" mostrara primero una de 4,0.
+      return conDistancia.sort(criterios[orden]);
+    }
+
+    // Orden sugerido: favoritas primero; con ubicación, por distancia
+    // (las sin coordenadas al final); si no, el alfabético del backend.
     return conDistancia.sort((a, b) => {
       const favDiff = (favoritos.has(a.id) ? 0 : 1) - (favoritos.has(b.id) ? 0 : 1);
       if (favDiff !== 0) return favDiff;
       if (ubicacion) {
-        return (a._distancia ?? Infinity) - (b._distancia ?? Infinity);
+        return alFinal(a._distancia) - alFinal(b._distancia);
       }
       return 0;
     });
-  }, [barberias, busqueda, filtroRubro, favoritos, ubicacion]);
+  }, [barberias, busqueda, filtroRubro, favoritos, ubicacion, soloFavoritas, orden]);
 
   const [destacada, ...resto] = barberiasFiltradas;
 
@@ -569,12 +725,23 @@ export default function LandingPage() {
                   <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-faint pointer-events-none" />
                   <input
                     id="buscar-tienda"
-                    type="search"
+                    ref={campoBusqueda}
+                    type="text"
                     value={busqueda}
                     onChange={(e) => setBusqueda(e.target.value)}
                     placeholder="Corte de barba, Los Leones, spa…"
-                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white dark:bg-card border border-line dark:border-slate-800 text-base text-ink dark:text-white placeholder:text-faint dark:placeholder:text-slate-500 outline-none transition-all focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15"
+                    className="w-full pl-11 pr-11 py-3.5 rounded-2xl bg-white dark:bg-card border border-line dark:border-slate-800 text-base text-ink dark:text-white placeholder:text-faint dark:placeholder:text-slate-500 outline-none transition-all focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15"
                   />
+                  {busqueda && (
+                    <button
+                      type="button"
+                      onClick={() => { setBusqueda(""); campoBusqueda.current?.focus(); }}
+                      aria-label="Limpiar búsqueda"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 grid place-items-center w-7 h-7 rounded-full text-faint transition-colors hover:bg-paper hover:text-ink-2 dark:hover:bg-card-2 dark:hover:text-slate-200"
+                    >
+                      <XIcon className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 <button
                   type="submit"
@@ -617,20 +784,40 @@ export default function LandingPage() {
               role="group"
               aria-label="Filtrar por tipo de local"
             >
-              <button type="button" onClick={() => setFiltroRubro("")} className={pillFiltro(!filtroRubro)}>
+              <button
+                type="button"
+                onClick={() => actualizarParams({ rubro: "" })}
+                className={pillFiltro(!filtroRubro)}
+              >
                 Todas
               </button>
               {rubros.map((r) => (
                 <button
                   key={r.clave}
                   type="button"
-                  onClick={() => setFiltroRubro(filtroRubro === r.clave ? "" : r.clave)}
+                  onClick={() => actualizarParams({ rubro: filtroRubro === r.clave ? "" : r.clave })}
                   className={pillFiltro(filtroRubro === r.clave)}
                 >
                   {r.etiqueta}
                 </button>
               ))}
             </div>
+
+            {estaLogueado && (
+              <button
+                type="button"
+                onClick={() => actualizarParams({ fav: soloFavoritas ? "" : "1" })}
+                aria-pressed={soloFavoritas}
+                className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-all active:scale-[0.97] ${
+                  soloFavoritas
+                    ? "bg-[#FDEBEC] border-[#F0CFD1] text-[#9F2F2D] dark:bg-rose-500/10 dark:border-rose-500/30 dark:text-rose-400"
+                    : "bg-white border-line text-ink-2 hover:border-line-strong dark:bg-card dark:border-slate-800 dark:text-slate-300"
+                }`}
+              >
+                <HeartIcon className="w-4 h-4" relleno={soloFavoritas} />
+                <span className="hidden sm:inline">Favoritas</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -654,17 +841,44 @@ export default function LandingPage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-6 pt-10 pb-20 lg:pb-28">
-          <div className="flex items-baseline justify-between gap-4 mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-ink dark:text-white tracking-tight">
-              {tituloDirectorio}
-            </h2>
-            {!cargando && (
-              <p className="shrink-0 font-mono text-[13px] text-muted dark:text-slate-500 tabular">
-                {filtrosActivos
-                  ? `${barberiasFiltradas.length} ${barberiasFiltradas.length === 1 ? "resultado" : "resultados"}`
-                  : `${paginacion.total} ${paginacion.total === 1 ? "tienda" : "tiendas"}`}
-              </p>
-            )}
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 mb-6">
+            <div className="flex items-baseline gap-3">
+              <h2 className="text-xl sm:text-2xl font-bold text-ink dark:text-white tracking-tight">
+                {tituloDirectorio}
+              </h2>
+              {!cargando && (
+                <p className="font-mono text-[13px] text-muted dark:text-slate-500 tabular">
+                  {filtrosQueAcotan
+                    ? `${barberiasFiltradas.length} ${barberiasFiltradas.length === 1 ? "resultado" : "resultados"}`
+                    : `${paginacion.total} ${paginacion.total === 1 ? "tienda" : "tiendas"}`}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              {filtrosActivos && (
+                <button
+                  type="button"
+                  onClick={limpiarFiltros}
+                  className="text-[13px] font-semibold text-muted underline decoration-line-strong underline-offset-4 transition-colors hover:text-ink dark:text-slate-400 dark:hover:text-white"
+                >
+                  Limpiar filtros
+                </button>
+              )}
+              <label className="flex items-center gap-2 text-[13px] text-muted dark:text-slate-400">
+                <span className="hidden sm:inline">Ordenar por</span>
+                <select
+                  value={orden}
+                  onChange={(e) => cambiarOrden(e.target.value)}
+                  disabled={buscandoUbicacion}
+                  className="rounded-full border border-line bg-white px-3.5 py-1.5 text-[13px] font-semibold text-ink-2 outline-none transition-colors hover:border-line-strong focus:border-emerald-600 disabled:opacity-60 dark:border-slate-800 dark:bg-card dark:text-slate-300"
+                >
+                  {ORDENES.map((o) => (
+                    <option key={o.clave} value={o.clave}>{o.etiqueta}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
 
           {cargando ? (
@@ -718,19 +932,23 @@ export default function LandingPage() {
                 <SearchIcon className="w-6 h-6 text-faint" />
               </span>
               <h3 className="text-xl font-semibold text-ink dark:text-white mb-2">
-                No encontramos tiendas
+                {soloFavoritas && !favoritos.size ? "Sin favoritas aún" : "No encontramos tiendas"}
               </h3>
               <p className="text-muted dark:text-slate-400 max-w-md mx-auto">
-                {busqueda
+                {soloFavoritas && !favoritos.size
+                  ? "Todavía no guardaste ninguna tienda. Toca el corazón de una para tenerla a mano."
+                  : busqueda
                   ? `Nada coincide con "${busqueda}". Prueba con otro nombre o servicio.`
+                  : soloFavoritas
+                  ? "Ninguna de tus favoritas calza con los filtros."
                   : filtroRubro
                   ? "Todavía no hay tiendas de este rubro en la plataforma."
                   : "Todavía no hay tiendas registradas en la plataforma."}
               </p>
-              {(busqueda || filtroRubro) && (
+              {filtrosActivos && (
                 <button
                   type="button"
-                  onClick={() => { setBusqueda(""); setFiltroRubro(""); }}
+                  onClick={limpiarFiltros}
                   className="mt-6 rounded-full border border-line dark:border-slate-700 bg-white dark:bg-card-2 px-5 py-2.5 text-sm font-semibold text-ink-2 dark:text-slate-300 transition-all hover:border-line-strong active:scale-[0.98]"
                 >
                   Limpiar filtros
