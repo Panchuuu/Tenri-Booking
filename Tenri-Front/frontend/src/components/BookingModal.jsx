@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 import apiFetch from "../utils/api";
 import CalendarPicker from "./CalendarPicker";
@@ -13,6 +14,34 @@ import { XIcon } from "./Icons";
 //  - Soporta modo "reagendar" (recibe citaExistente)
 //  - Muestra mensaje si la fecha está bloqueada (vacaciones del barbero)
 // ============================================================
+
+// Fuera del componente a proposito: definido adentro, React lo ve como un
+// tipo nuevo en cada render y desmonta y vuelve a montar la fila entera de
+// pasos con cada tecla o seleccion, reiniciando sus transiciones.
+function StepHeader({ num, label, activo, completo }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+        completo
+          ? "bg-emerald-500 text-white dark:text-abyss"
+          : activo
+            ? "bg-slate-900 dark:bg-white text-white dark:text-abyss ring-2 ring-emerald-500/30 ring-offset-2 ring-offset-white dark:ring-offset-card"
+            : "bg-paper dark:bg-slate-800 text-faint"
+      }`}>
+        {completo ? (
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        ) : num}
+      </div>
+      <h3 className={`text-sm font-semibold uppercase tracking-wider transition-colors ${
+        activo || completo ? "text-ink dark:text-white" : "text-faint"
+      }`}>
+        {label}
+      </h3>
+    </div>
+  );
+}
 
 export default function BookingModal({
   servicio,
@@ -196,39 +225,20 @@ export default function BookingModal({
 
   const barberoSeleccionado = barberos.find((b) => b.id === barberoId);
 
-  const StepHeader = ({ num, label, activo, completo }) => (
-    <div className="flex items-center gap-3 mb-4">
-      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-        completo
-          ? "bg-emerald-500 text-white dark:text-abyss"
-          : activo
-            ? "bg-slate-900 dark:bg-white text-white dark:text-abyss ring-2 ring-emerald-500/30 ring-offset-2 ring-offset-white dark:ring-offset-card"
-            : "bg-paper dark:bg-slate-800 text-faint"
-      }`}>
-        {completo ? (
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-        ) : num}
-      </div>
-      <h3 className={`text-sm font-semibold uppercase tracking-wider transition-colors ${
-        activo || completo ? "text-ink dark:text-white" : "text-faint"
-      }`}>
-        {label}
-      </h3>
-    </div>
-  );
-
-  return (
+  // Portal al body: la pagina va envuelta en .page-transition, que anima
+  // opacidad y transform y por eso crea un contexto de apilamiento. Dentro
+  // de el, el z-[100] del modal no podia pasar por encima del navbar
+  // (z-50), que quedaba nitido y clicable sobre el velo.
+  return createPortal(
     <div
-      className={`fixed inset-0 z-[100] flex items-start justify-center bg-slate-900/40 dark:bg-abyss/80 backdrop-blur-md p-0 sm:p-4 sm:pt-8 pt-16 ${cerrando ? "animate-fade-out" : "animate-fade-in"}`}
+      className={`fixed inset-0 z-[100] flex items-start justify-center bg-slate-900/55 dark:bg-abyss/85 p-0 sm:p-4 sm:pt-8 pt-16 ${cerrando ? "animate-fade-out" : "animate-fade-in"}`}
       onClick={() => solicitarCierre()}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={esReagendar ? "Reagendar cita" : `Reservar ${servicio?.nombre || "servicio"}`}
-        className={`bg-white dark:bg-card border-t sm:border border-line dark:border-slate-800/60 sm:rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh] ${cerrando ? "animate-scale-out" : "animate-scale-in"}`}
+        className={`bg-white dark:bg-card border-t sm:border border-line dark:border-slate-800/60 sm:rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.18)] w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh] ${cerrando ? "animate-scale-out" : "animate-scale-in"}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
@@ -412,6 +422,7 @@ export default function BookingModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
