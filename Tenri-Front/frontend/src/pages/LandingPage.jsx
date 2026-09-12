@@ -355,18 +355,41 @@ export default function LandingPage() {
     indexable: !window.location.search,
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "WebSite",
-      name: "Tenri Booking",
-      url: "https://booking.tenri.cl/",
-      inLanguage: "es-CL",
-      potentialAction: {
-        "@type": "SearchAction",
-        target: {
-          "@type": "EntryPoint",
-          urlTemplate: "https://booking.tenri.cl/?q={search_term_string}",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://booking.tenri.cl/#sitio",
+          name: "Tenri Booking",
+          url: "https://booking.tenri.cl/",
+          inLanguage: "es-CL",
+          publisher: { "@id": "https://booking.tenri.cl/#organizacion" },
+          potentialAction: {
+            "@type": "SearchAction",
+            target: {
+              "@type": "EntryPoint",
+              urlTemplate: "https://booking.tenri.cl/?q={search_term_string}",
+            },
+            "query-input": "required name=search_term_string",
+          },
         },
-        "query-input": "required name=search_term_string",
-      },
+        {
+          // Ata el sitio a la marca: "Tenri Booking" es un producto de
+          // Tenri, y sin declararlo el buscador no relaciona el
+          // subdominio con el dominio principal.
+          "@type": "Organization",
+          "@id": "https://booking.tenri.cl/#organizacion",
+          name: "Tenri Booking",
+          url: "https://booking.tenri.cl/",
+          logo: "https://booking.tenri.cl/og-tenri.jpg",
+          areaServed: "CL",
+          parentOrganization: {
+            "@type": "Organization",
+            name: "Tenri",
+            url: "https://tenri.cl/",
+          },
+          sameAs: ["https://tenri.cl/"],
+        },
+      ],
     },
   });
   const campoBusqueda = useRef(null);
