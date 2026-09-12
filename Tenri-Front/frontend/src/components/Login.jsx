@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 import { BASE_URL } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
@@ -103,13 +104,16 @@ export default function Login({ onClose, onLoginSuccess, modoRegistro = false })
     }
   };
 
-  return (
+  // Portal al body: las paginas van envueltas en .page-transition, que anima
+  // opacidad y transform y por eso crea un contexto de apilamiento. Dentro de
+  // el, el z del modal no lograba pasar por encima del navbar fijo.
+  return createPortal(
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 dark:bg-abyss/80 backdrop-blur-md p-4 ${cerrando ? "animate-fade-out" : "animate-fade-in"}`}
+      className={`fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/55 dark:bg-abyss/85 p-4 ${cerrando ? "animate-fade-out" : "animate-fade-in"}`}
       onClick={solicitarCierre}
     >
       <div
-        className={`bg-white dark:bg-card border border-line dark:border-slate-800/60 rounded-xl shadow-2xl w-full max-w-md overflow-hidden relative ${cerrando ? "animate-scale-out" : "animate-scale-in"}`}
+        className={`bg-white dark:bg-card border border-line dark:border-slate-800/60 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.18)] w-full max-w-md overflow-hidden relative ${cerrando ? "animate-scale-out" : "animate-scale-in"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-emerald-400/20 dark:bg-emerald-600/15 rounded-full blur-[80px] pointer-events-none" />
@@ -221,6 +225,7 @@ export default function Login({ onClose, onLoginSuccess, modoRegistro = false })
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

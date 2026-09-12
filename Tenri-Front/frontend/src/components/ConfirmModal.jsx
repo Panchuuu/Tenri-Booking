@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 // ============================================================
 // 🪟 CONFIRM MODAL — Modal de confirmación reutilizable
@@ -43,13 +44,16 @@ export default function ConfirmModal({
       ? "bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-500"
       : "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500";
 
-  return (
+  // Portal al body: las paginas van envueltas en .page-transition, que anima
+  // opacidad y transform y por eso crea un contexto de apilamiento. Dentro de
+  // el, el z del modal no lograba pasar por encima del navbar fijo.
+  return createPortal(
     <div
-      className={`fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/50 dark:bg-abyss/80 backdrop-blur-sm p-4 ${cerrandose ? "animate-fade-out" : "animate-fade-in"}`}
+      className={`fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/55 dark:bg-abyss/85 p-4 ${cerrandose ? "animate-fade-out" : "animate-fade-in"}`}
       onClick={cargando || cerrandose ? undefined : onCancelar}
     >
       <div
-        className={`bg-white dark:bg-card border border-line dark:border-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl ${cerrandose ? "animate-scale-out" : "animate-scale-in"}`}
+        className={`bg-white dark:bg-card border border-line dark:border-slate-800 rounded-xl p-6 max-w-md w-full shadow-[0_8px_32px_rgba(0,0,0,0.18)] ${cerrandose ? "animate-scale-out" : "animate-scale-in"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-4 mb-4">
@@ -86,6 +90,7 @@ export default function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

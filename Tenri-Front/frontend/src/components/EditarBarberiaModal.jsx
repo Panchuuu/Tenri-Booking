@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 import useApiMutation from "../hooks/useApiMutation";
 import ImageUploader from "./ImageUploader";
@@ -83,13 +84,16 @@ export default function EditarBarberiaModal({ barberia, onClose, onGuardado }) {
 
   const inputClass = "w-full bg-paper-2 dark:bg-abyss border border-line dark:border-slate-800 rounded-xl p-3 text-sm text-ink dark:text-slate-200 outline-none focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/15 transition-all";
 
-  return (
+  // Portal al body: las paginas van envueltas en .page-transition, que anima
+  // opacidad y transform y por eso crea un contexto de apilamiento. Dentro de
+  // el, el z del modal no lograba pasar por encima del navbar fijo.
+  return createPortal(
     <div
-      className={`fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/50 dark:bg-abyss/80 backdrop-blur-sm p-4 ${cerrandose ? "animate-fade-out" : "animate-fade-in"}`}
+      className={`fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/55 dark:bg-abyss/85 p-4 ${cerrandose ? "animate-fade-out" : "animate-fade-in"}`}
       onClick={cerrar}
     >
       <div
-        className={`bg-white dark:bg-card border border-line dark:border-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl ${cerrandose ? "animate-scale-out" : "animate-scale-in"}`}
+        className={`bg-white dark:bg-card border border-line dark:border-slate-800 rounded-xl p-6 max-w-md w-full shadow-[0_8px_32px_rgba(0,0,0,0.18)] ${cerrandose ? "animate-scale-out" : "animate-scale-in"}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header con preview de marca en vivo */}
@@ -199,6 +203,7 @@ export default function EditarBarberiaModal({ barberia, onClose, onGuardado }) {
 
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
