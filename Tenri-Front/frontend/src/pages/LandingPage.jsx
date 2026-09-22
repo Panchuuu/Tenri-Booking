@@ -89,12 +89,18 @@ function promedioDe(barberia) {
 
 /** Marca de la tienda: su logo, o su color con la inicial. */
 function SelloTienda({ barberia, className = "", tamañoTexto = "text-xl" }) {
-  if (barberia.logo_url) {
+  // Un logo guardado que no carga -archivo movido, enlace de storage sin
+  // crear- dejaba el cuadrito roto del navegador. Cae a la inicial, que es
+  // lo mismo que se muestra cuando no hay logo.
+  const [fallo, setFallo] = useState(false);
+
+  if (barberia.logo_url && !fallo) {
     return (
       <img
         src={barberia.logo_url}
         alt={`Logo de ${barberia.nombre}`}
         loading="lazy"
+        onError={() => setFallo(true)}
         className={`object-cover bg-white ${className}`}
       />
     );

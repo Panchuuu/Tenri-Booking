@@ -25,6 +25,11 @@ class UpdatePerfilRequest extends FormRequest
             // Alineado con Pack 1 y Pack 2/B: max:80 (era max:255 irreal).
             'name' => 'required|string|min:2|max:80',
 
+            // Para el recordatorio de la hora y el aviso de cupo por WhatsApp.
+            // Opcional: sin él todo sigue saliendo por correo. Se acepta como
+            // la persona lo escriba; el envío lo normaliza.
+            'telefono' => 'nullable|string|max:25',
+
             // Alineado con Pack 1 y Pack 2/B: email validation completa.
             // unique ignora al propio usuario para que pueda guardar sin cambiar email.
             'email' => [

@@ -100,6 +100,10 @@ export default function MiTiendaPage() {
               label="Logo"
               previewActual={barberia?.logo_url || null}
               onChange={(file) => setForm((prev) => ({ ...prev, logo_archivo: file }))}
+              // Sin logo, la inicial de la tienda sobre su color: es lo mismo
+              // que ven tus clientes en el directorio mientras no subas uno.
+              inicial={form.nombre || barberia?.nombre}
+              colorFondo={form.color_principal}
             />
 
             <div className="flex-1 w-full space-y-4">

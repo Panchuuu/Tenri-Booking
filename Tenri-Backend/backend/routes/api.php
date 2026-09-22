@@ -6,6 +6,8 @@ use App\Http\Controllers\SuperAdminUsuarioController;
 use App\Http\Controllers\BarberoController;
 use App\Http\Controllers\BloqueoHorarioController;
 use App\Http\Controllers\CitaController;
+use App\Http\Controllers\ListaEsperaController;
+use App\Http\Controllers\ConfiguracionTiendaController;
 use App\Http\Controllers\FavoritoController;
 use App\Http\Controllers\IntegracionPanelController;
 use App\Http\Controllers\ServicioController;
@@ -22,6 +24,9 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['firma.panel', 'throttle:60,1'])->prefix('integracion/panel')->group(function () {
     Route::post('/metricas',  [IntegracionPanelController::class, 'metricas']);
     Route::post('/barberias', [IntegracionPanelController::class, 'barberias']);
+    Route::post('/crear-barberia', [IntegracionPanelController::class, 'crearBarberia']);
+    Route::post('/nombre-disponible', [IntegracionPanelController::class, 'nombreDisponible']);
+    Route::put ('/usuarios/password', [IntegracionPanelController::class, 'sincronizarPassword']);
     Route::put ('/barberias/{id}/suspension', [IntegracionPanelController::class, 'toggleSuspensionBarberia'])->whereNumber('id');
     Route::post('/usuarios',  [IntegracionPanelController::class, 'usuarios']);
     Route::put ('/usuarios/{id}/rol',        [IntegracionPanelController::class, 'cambiarRolUsuario'])->whereNumber('id');
@@ -60,6 +65,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/perfil', [AuthController::class, 'updatePerfil']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    // Los locales a los que esta persona tiene acceso, y cuál está usando.
+    // Quien administra varios elige acá con cuál trabajar.
+    Route::get('/sesion/locales', [AuthController::class, 'misLocales']);
+    Route::put('/sesion/local',   [AuthController::class, 'seleccionarLocal']);
+
     // 👑 SUPERADMIN
     Route::middleware('role:superadmin')->group(function () {
         // Listado completo (incluye suspendidas, que el público no ve) y
@@ -91,6 +101,15 @@ Route::middleware('auth:sanctum')->group(function () {
         // POST + _method=PUT para multipart (subida de logo desde Mi Tienda)
         Route::post('/mi-barberia', [BarberiaController::class, 'updateConfig'])->middleware('throttle:30,1');
         Route::get('/mi-equipo',     [BarberiaController::class, 'miEquipo']);
+
+        // Puesta en marcha: qué le falta al local para recibir su primera
+        // reserva, y el tutorial que se ofrece una vez y se puede saltar.
+        // Quiénes esperan una hora en este local: demanda que hoy no se
+        // está pudiendo atender, y a quién llamar cuando se cae una cita.
+        Route::get('/mi-barberia/lista-espera', [ListaEsperaController::class, 'delLocal']);
+
+        Route::get ('/mi-barberia/configuracion',          [ConfiguracionTiendaController::class, 'estado']);
+        Route::post('/mi-barberia/configuracion/tutorial', [ConfiguracionTiendaController::class, 'resolverTutorial']);
         Route::get('/mis-servicios', [BarberiaController::class, 'misServicios']);
 
         // Barberos (las rutas con subida de imagen llevan rate limit)
@@ -120,6 +139,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // 👤 COMUNES
     Route::get('/mis-reservas', [CitaController::class, 'misReservas']);
+
+    // ⏳ Lista de espera: pedir que te avisen si se libera una hora de un día
+    // que está lleno. Con throttle porque anotarse dispara avisos.
+    Route::get   ('/mi-lista-espera',      [ListaEsperaController::class, 'mias']);
+    Route::post  ('/lista-espera',         [ListaEsperaController::class, 'store'])->middleware('throttle:20,1');
+    Route::delete('/lista-espera/{id}',    [ListaEsperaController::class, 'destroy'])->whereNumber('id');
 
     // ❤️ Favoritos: cualquier usuario autenticado puede marcar barberías.
     Route::get ('/mis-favoritos',                 [FavoritoController::class, 'index']);

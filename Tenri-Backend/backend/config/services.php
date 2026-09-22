@@ -46,4 +46,21 @@ return [
         'integration_key' => env('PANEL_INTEGRATION_KEY'),
     ],
 
+    /*
+    | WhatsApp: el canal por el que de verdad se leen los avisos.
+    |
+    | `driver=log` escribe el mensaje en el log en vez de enviarlo, igual que
+    | MAIL_MAILER=log: sirve para probar el flujo completo en local sin gastar
+    | mensajes ni mandarle nada a un número real.
+    |
+    | Sin token ni phone_number_id el canal queda no disponible y todo sale por
+    | correo, como antes. Nada se rompe por no configurarlo.
+    */
+    'whatsapp' => [
+        'driver' => env('WHATSAPP_DRIVER', 'log'),
+        'token' => env('WHATSAPP_TOKEN'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'prefijo_pais' => env('WHATSAPP_PREFIJO_PAIS', '56'),
+    ],
+
 ];

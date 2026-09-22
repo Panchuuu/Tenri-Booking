@@ -36,15 +36,30 @@ export default function ImageUploader({
   tiposPermitidos = TIPOS_DEFAULT,
   pesoMaxMB = 5,
   shape = "square",
+  /**
+   * Qué mostrar cuando no hay imagen: la inicial del nombre, sobre su color.
+   *
+   * Sin esto el hueco era un icono genérico, y si la imagen guardada no
+   * cargaba -un archivo movido, un enlace de storage sin crear- quedaba el
+   * cuadrito roto del navegador, que parece un error de la aplicación.
+   */
+  inicial = null,
+  colorFondo = null,
 }) {
   const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(previewActual);
+  const [fallo, setFallo] = useState(false);
   const inputRef = useRef(null);
 
   // Sincronizar preview con el prop si cambia desde afuera
   useEffect(() => {
     if (!archivoSeleccionado) setPreviewUrl(previewActual);
   }, [previewActual, archivoSeleccionado]);
+
+  // Una imagen nueva merece otra oportunidad de cargar.
+  useEffect(() => {
+    setFallo(false);
+  }, [previewUrl]);
 
   // Generar URL.createObjectURL para preview local + cleanup
   useEffect(() => {
@@ -107,11 +122,12 @@ export default function ImageUploader({
 
       <div className="flex items-center gap-4">
         {/* Preview */}
-        {previewUrl ? (
+        {previewUrl && !fallo ? (
           <div className="relative shrink-0">
             <img
               src={previewUrl}
-              alt="Preview"
+              alt={label}
+              onError={() => setFallo(true)}
               className={`w-20 h-20 object-cover ${radius} border-2 border-emerald-500/30 shadow-none`}
             />
             {/* Botón X para limpiar — siempre visible */}
@@ -127,6 +143,14 @@ export default function ImageUploader({
                 </svg>
               </button>
             )}
+          </div>
+        ) : inicial ? (
+          <div
+            aria-hidden="true"
+            className={`w-20 h-20 ${radius} flex items-center justify-center text-white font-bold text-3xl shrink-0 border-2 border-white/10`}
+            style={{ backgroundColor: colorFondo || "#1F6F5C" }}
+          >
+            {String(inicial).trim().substring(0, 1).toUpperCase()}
           </div>
         ) : (
           <div className={`w-20 h-20 ${radius} bg-paper dark:bg-slate-800/50 border-2 border-dashed border-line dark:border-slate-700 flex items-center justify-center text-faint shrink-0`}>

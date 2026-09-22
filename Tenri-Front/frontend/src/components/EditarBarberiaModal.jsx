@@ -131,6 +131,8 @@ export default function EditarBarberiaModal({ barberia, onClose, onGuardado }) {
             label="Logo (opcional)"
             shape="square"
             previewActual={snap.logo_url || null}
+            inicial={snap.nombre}
+            colorFondo={snap.color_principal}
             onChange={(file) => setForm(prev => ({ ...prev, logo_archivo: file }))}
           />
 

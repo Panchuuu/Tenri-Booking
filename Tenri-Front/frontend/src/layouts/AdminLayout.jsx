@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import SelectorDeLocal from "../components/SelectorDeLocal";
+import PuestaEnMarcha from "../components/PuestaEnMarcha";
 import {
   CalendarIcon, ScissorsIcon, UsersIcon, SettingsIcon,
   UserIcon, LogOutIcon, SunIcon, MoonIcon, HomeIcon
@@ -131,6 +133,10 @@ export default function AdminLayout() {
             </div>
           </div>
 
+          <div className="mb-3">
+            <SelectorDeLocal />
+          </div>
+
           <div className="flex items-center justify-between gap-2">
             <button onClick={toggleTema} aria-label="Cambiar tema"
                     className="flex-1 px-3 py-2 bg-paper dark:bg-slate-800/50 hover:bg-line dark:hover:bg-slate-800 rounded-lg flex items-center justify-center text-ink-2 dark:text-slate-400 transition-all active:scale-95">
@@ -167,6 +173,9 @@ export default function AdminLayout() {
         {/* key por ruta: re-monta el wrapper para que la transición de
             página corra en cada navegación del panel, no solo al entrar */}
         <div key={location.pathname} className="flex-1 p-6 md:p-10 page-transition">
+          {/* Arriba de todo y en todas las pantallas del panel: lo que falta
+              para que la tienda pueda recibir su primera reserva. */}
+          <PuestaEnMarcha />
           <Outlet />
         </div>
       </main>

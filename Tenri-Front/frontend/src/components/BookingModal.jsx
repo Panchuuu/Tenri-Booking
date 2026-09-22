@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import apiFetch from "../utils/api";
 import CalendarPicker from "./CalendarPicker";
 import BarberoCard from "./BarberoCard";
+import AvisameSiSeLibera from "./AvisameSiSeLibera";
 import { XIcon } from "./Icons";
 
 // ============================================================
@@ -344,7 +345,15 @@ export default function BookingModal({
                     {[...Array(8)].map((_, i) => <div key={i} className="h-12 rounded-lg bg-paper dark:bg-slate-800/50 shimmer" />)}
                   </div>
                 ) : horariosBase.length === 0 ? (
-                  <p className="text-sm text-muted py-4">No hay horarios disponibles este día.</p>
+                  <>
+                    <p className="text-sm text-muted py-4">No hay horarios disponibles este día.</p>
+                    <AvisameSiSeLibera
+                      barberiaId={servicio?.barberia_id}
+                      fecha={fecha}
+                      barberoId={barberoId}
+                      servicioId={servicio?.id}
+                    />
+                  </>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 animate-fade-in">
                     {horariosBase.map((h) => {
@@ -376,6 +385,18 @@ export default function BookingModal({
                       );
                     })}
                   </div>
+                )}
+
+                {/* El día tiene grilla, pero no queda nada que tomar. Es el
+                    momento exacto en que la persona se iba a ir. */}
+                {!cargandoHoras && horariosBase.length > 0 &&
+                  horariosBase.every((h) => horasOcupadas.includes(h) || horasPasadas.includes(h)) && (
+                  <AvisameSiSeLibera
+                    barberiaId={servicio?.barberia_id}
+                    fecha={fecha}
+                    barberoId={barberoId}
+                    servicioId={servicio?.id}
+                  />
                 )}
               </section>
             )}

@@ -9,9 +9,7 @@ use App\Models\Barberia;
 use App\Models\Servicio;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class BarberiaController extends Controller
 {
@@ -111,28 +109,16 @@ class BarberiaController extends Controller
             $rutaLogo = $request->file('logo')->store('logos_barberias', 'public');
         }
 
-        // 🔒 Slug único: el unique de `nombre` no basta — "Barbería VIP" y
-        // "Barberia-VIP" son nombres distintos pero colapsan al mismo slug,
-        // y el slug es la URL pública (showPorSlug devolvería la equivocada).
-        $slugBase = Str::slug($request->nombre_barberia) ?: 'tienda';
-        $slug = $slugBase;
-        for ($i = 2; Barberia::where('slug', $slug)->exists(); $i++) {
-            $slug = "{$slugBase}-{$i}";
-        }
-
-        $barberia = Barberia::create([
-            'nombre'          => $request->nombre_barberia,
-            'slug'            => $slug,
+        // El slug único y la creación del admin viven en el modelo: las
+        // comparte con el alta que dispara una compra en tenri.cl
+        // (IntegracionPanelController::crearBarberia).
+        ['barberia' => $barberia] = Barberia::crearConAdmin([
+            'nombre_barberia' => $request->nombre_barberia,
             'color_principal' => $request->color_principal,
-            'logo'            => $rutaLogo,
-        ]);
-
-        User::create([
-            'name'        => $request->admin_nombre,
-            'email'       => $request->admin_email,
-            'password'    => Hash::make($request->admin_password),
-            'rol'         => 'admin',
-            'barberia_id' => $barberia->id,
+            'logo' => $rutaLogo,
+            'admin_nombre' => $request->admin_nombre,
+            'admin_email' => $request->admin_email,
+            'admin_password' => $request->admin_password,
         ]);
 
         return response()->json([
@@ -225,12 +211,13 @@ class BarberiaController extends Controller
      */
     public function miEquipo(Request $request)
     {
-        // Scope barberos(): incluye al dueño si también atiende (rol dual).
-        $barberos = User::barberos()
-            ->where('barberia_id', $request->user()->barberia_id)
-            ->get();
+        // Quienes atienden **en este local**: el barbero contratado acá y el
+        // dueño que además corta acá. Antes se preguntaba por `es_barbero` del
+        // usuario, que es de la persona y no del local, así que un dueño que
+        // atendía en uno aparecía en el equipo de todos los suyos.
+        $barberia = Barberia::find($request->user()->barberia_id);
 
-        return response()->json($barberos);
+        return response()->json($barberia ? $barberia->quienesAtienden()->get() : []);
     }
 
     /**

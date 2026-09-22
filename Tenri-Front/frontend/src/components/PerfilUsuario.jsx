@@ -6,6 +6,7 @@ export default function PerfilUsuario({ usuario, setUsuario }) {
   const [formData, setFormData] = useState({
     name: usuario.name || "",
     email: usuario.email || "",
+    telefono: usuario.telefono || "",
     password: "",
     password_confirmation: "",
     avatar_archivo: null,
@@ -35,6 +36,7 @@ export default function PerfilUsuario({ usuario, setUsuario }) {
     const data = new FormData();
     data.append("name", formData.name);
     data.append("email", formData.email);
+    data.append("telefono", formData.telefono || "");
 
     if (formData.password) {
       data.append("password", formData.password);
@@ -113,6 +115,26 @@ export default function PerfilUsuario({ usuario, setUsuario }) {
             <label className="text-xs font-semibold text-muted uppercase mb-2 block">Correo Electrónico</label>
             <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-abyss border border-slate-800 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-emerald-500/50" required />
           </div>
+        </div>
+
+        {/* El canal por el que de verdad se leen los avisos. Opcional: sin
+            teléfono todo sigue llegando por correo. */}
+        <div>
+          <label className="text-xs font-semibold text-muted uppercase mb-2 block">
+            WhatsApp <span className="normal-case text-faint font-normal">(opcional)</span>
+          </label>
+          <input
+            type="tel"
+            name="telefono"
+            value={formData.telefono}
+            onChange={handleChange}
+            placeholder="9 1234 5678"
+            maxLength={25}
+            className="w-full bg-abyss border border-slate-800 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-emerald-500/50"
+          />
+          <p className="text-xs text-faint mt-2">
+            Te mandamos por acá el recordatorio de tu hora y el aviso si se libera un cupo que estabas esperando.
+          </p>
         </div>
 
         <div className="pt-6 border-t border-slate-800/50">

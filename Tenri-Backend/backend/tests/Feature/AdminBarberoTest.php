@@ -75,7 +75,7 @@ class AdminBarberoTest extends TestCase
     public function test_admin_barbero_aparece_en_el_listado_publico_de_barberos(): void
     {
         [$barberia, $admin] = $this->setupBarberiaConAdmin();
-        $admin->update(['es_barbero' => true]);
+        $admin->atenderEn($admin->barberia_id, true);
 
         $response = $this->getJson("/api/barberos?barberia={$barberia->slug}");
 
@@ -99,7 +99,8 @@ class AdminBarberoTest extends TestCase
     {
         Mail::fake();
         [, $admin, $servicio] = $this->setupBarberiaConAdmin();
-        $admin->update(['es_barbero' => true, 'hora_inicio' => '10:00', 'hora_fin' => '18:00']);
+        $admin->update(['hora_inicio' => '10:00', 'hora_fin' => '18:00']);
+        $admin->atenderEn($admin->barberia_id, true);
         $cliente = User::factory()->cliente()->create();
 
         $response = $this->actingAs($cliente)->postJson('/api/citas', [
@@ -119,7 +120,7 @@ class AdminBarberoTest extends TestCase
     public function test_disponibilidad_responde_para_el_admin_barbero(): void
     {
         [, $admin] = $this->setupBarberiaConAdmin();
-        $admin->update(['es_barbero' => true]);
+        $admin->atenderEn($admin->barberia_id, true);
 
         $fecha = now()->addDays(3)->format('Y-m-d');
         $this->getJson("/api/barberos/{$admin->id}/disponibilidad?fecha={$fecha}")
@@ -131,7 +132,7 @@ class AdminBarberoTest extends TestCase
     {
         Mail::fake();
         [$barberia, $admin, $servicio] = $this->setupBarberiaConAdmin();
-        $admin->update(['es_barbero' => true]);
+        $admin->atenderEn($admin->barberia_id, true);
         $cliente = User::factory()->cliente()->create();
 
         // Cita activa con el dueño: debe cancelarse al removerlo
@@ -158,7 +159,7 @@ class AdminBarberoTest extends TestCase
     public function test_admin_puede_editar_su_ficha_de_barbero(): void
     {
         [, $admin] = $this->setupBarberiaConAdmin();
-        $admin->update(['es_barbero' => true]);
+        $admin->atenderEn($admin->barberia_id, true);
 
         $response = $this->actingAs($admin)->putJson("/api/barberos/{$admin->id}", [
             'especialidad' => 'Cortes clásicos · Barba',

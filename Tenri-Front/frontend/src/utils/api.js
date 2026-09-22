@@ -48,6 +48,24 @@ const apiFetch = async (endpoint, options = {}) => {
       return Promise.reject(new Error("Sesión expirada"));
     }
 
+    /**
+     * Avisa que algo del local cambió.
+     *
+     * Lo escucha el panel de puesta en marcha, que muestra cuánto lleva
+     * configurada la tienda: sin esto, agregar un servicio o subir el logo no
+     * movía la barra hasta cambiar de módulo, porque solo se recalculaba al
+     * navegar. Se emite acá, en el único lugar por donde pasan todas las
+     * escrituras, en vez de en cada pantalla que guarda algo.
+     *
+     * Solo para escrituras que salieron bien: un GET no cambia nada y un
+     * error tampoco.
+     */
+    const metodo = (options.method || "GET").toUpperCase();
+
+    if (response.ok && metodo !== "GET") {
+      window.dispatchEvent(new CustomEvent("tenri:datos-cambiaron", { detail: { endpoint, metodo } }));
+    }
+
     return response;
   } catch (error) {
     console.error("Error de conexión al servidor:", error);
