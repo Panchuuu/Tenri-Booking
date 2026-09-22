@@ -147,6 +147,85 @@ Cuerpo: `{}`. Respuesta: `{"schema":1,"barberias":[...]}`, ordenadas por nombre,
 
 `activa` es derivado (`estado_suscripcion !== 'suspendida'`), no una columna: no se escribe directo, se cambia con el endpoint siguiente.
 
+`barberos_count` cuenta a quienes atienden **en ese local** (`Barberia::quienesAtienden()`: rol `barbero` o `es_barbero` en la fila de `barberia_usuario`). Antes se contaba por persona, y un dueño que atendía en uno de sus locales sumaba en todos.
+
+### `POST /api/integracion/panel/crear-barberia`
+
+Da de alta una tienda con su administrador. Lo dispara una compra de Booking en tenri.cl: cuando llega esta llamada, el panel **ya cobró**. Por eso todo lo que está en este camino evita fallar por motivos ajenos a los datos (ver la nota del correo, más abajo).
+
+Cuerpo:
+
+```jsonc
+{
+  "nombre_barberia": "Barbería Central",   // obligatorio, 3–60, único en barberias.nombre
+  "color_principal": "#0EA5E9",            // obligatorio, máx. 20
+  "admin_nombre": "Ana Pérez",             // obligatorio, 2–80
+  "admin_email": "ana@correo.cl",          // obligatorio, email:rfc,filter, máx. 120
+  "admin_password_hash": "$2y$12$…",       // una de las dos: el hash bcrypt de la cuenta de tenri.cl…
+  "admin_password": "…",                   // …o una contraseña en claro (mín. 8), nunca las dos
+  "plan": "basico"                         // opcional, máx. 40
+}
+```
+
+Respuesta `201`:
+
+```jsonc
+{ "schema": 1, "barberia": { … }, "admin_creado": true }
+```
+
+Lo que hay que saber del contrato:
+
+- **La contraseña llega de una de dos formas, y solo una.** La compra en tenri.cl manda `admin_password_hash`: el mismo hash bcrypt de la cuenta del comprador, para que entre a booking con las mismas credenciales que ya usa allá. El alta manual manda `admin_password` en claro. Mandar las dos es `422` (`missing_with`), mandar ninguna también (`required_without`). El cast `hashed` del modelo `User` distingue una forma de la otra por sí solo; eso exige que los dos lados usen el **mismo algoritmo y costo de bcrypt**, igual que el puente ERP.
+- **Si el correo ya tiene cuenta, el local se le suma.** No se crea un usuario nuevo ni se falla por correo duplicado: la tienda queda en `barberia_usuario` con rol `admin` y la persona la ve en su selector de locales. En ese caso **no se le toca la contraseña** (es la que ya usa para sus otros locales, aunque venga un hash en el cuerpo) y la respuesta trae `admin_creado: false`. Quien manda el correo de bienvenida lee ese campo: con `false` no corresponde mandarle una clave nueva, sino recordarle que entra con la suya. Si esa cuenta no tenía ningún local seleccionado (un cliente, por ejemplo), este pasa a ser el activo y su rol pasa a `admin`.
+- **El correo de un superadmin se rechaza** (`422` en `admin_email`): la cuenta de plataforma no es de nadie en particular y no puede ser dueña de un local.
+- **El correo no se valida contra DNS** (`email:rfc,filter`, sin `dns`), a diferencia del alta manual del superadmin. Acá nadie lo está tipeando: viene de una cuenta de tenri.cl ya validada. Una consulta DNS lenta o caída dejaría a un cliente pagado y sin tienda.
+- **El slug se calcula acá** (`Barberia::slugDisponible()`): el `unique` de `nombre` no alcanza, porque "Barbería VIP" y "Barberia-VIP" colapsan al mismo slug. Si choca se le agrega `-2`, `-3`, etc.
+- **Una sola operación, dos puertas.** La creación vive en `Barberia::crearConAdmin()`, que usa también `BarberiaController::store` (el alta manual del superadmin). Todo corre en una transacción: si el usuario no se puede crear, la tienda no queda creada y sin dueño.
+- **Los mensajes de validación están en español y dicen qué hacer** ("Ese nombre de tienda ya está tomado por otro local. Hay que elegir otro."). No se quedan en este lado: viajan al panel, donde los lee quien tiene que resolver una compra cobrada sin tienda, y pueden terminar frente al comprador.
+
+`plan` no está en el `$fillable` de `Barberia` a propósito (mismo motivo que `estado_suscripcion`): se asigna aparte con `forceFill`.
+
+### `POST /api/integracion/panel/nombre-disponible`
+
+Cuerpo: `{"nombre":"Barbería Central"}` (obligatorio, 3–60). Respuesta:
+
+```jsonc
+{ "schema": 1, "disponible": true, "slug": "barberia-central" }
+```
+
+Lo consulta el checkout de tenri.cl mientras el comprador escribe: el nombre de la tienda se pide **antes** de pagar, así que el formulario tiene que poder decir la verdad en ese momento y no después del cobro. `slug` es la dirección pública con la que quedaría (ya con el sufijo `-2` si hace falta).
+
+**No es una reserva.** Entre esta consulta y el alta pasa el pago entero (minutos con tarjeta, días con transferencia) y en el medio otro puede tomar el nombre. Quien provisiona tiene que seguir tratando el `422` de `crear-barberia` como un caso posible.
+
+### `PUT /api/integracion/panel/usuarios/password`
+
+Le copia a un admin el hash de la contraseña que acaba de poner en tenri.cl. Su cuenta de acá se creó con el hash de la de allá: si cambia una y no la otra, la promesa de "entras con las mismas credenciales" se rompe en silencio hasta el próximo login.
+
+Cuerpo:
+
+```jsonc
+{ "barberia_id": 12, "email": "ana@correo.cl", "password_hash": "$2y$12$…" }
+```
+
+Respuesta: `{"schema":1,"sincronizado":true}`, o `{"schema":1,"sincronizado":false}` si no encontró la cuenta. Lo segundo **no es un error** (`200` igual): la cuenta pudo cambiar de correo o de local, y el puente lo registra y sigue.
+
+- Se identifica por local **y** correo, no solo por correo: así una sincronización no puede tocar una cuenta que no sea la de esa tienda.
+- Un superadmin no se sincroniza nunca: su acceso no depende de tenri.cl.
+- **Ojo con el multi-local:** hoy la búsqueda compara contra `users.barberia_id`, que es el local que la persona tiene **seleccionado**, no contra `barberia_usuario`. Si alguien con varios locales está parado en otro distinto del que manda el panel, la respuesta es `sincronizado: false` y la contraseña no se copia. El puente debería tratar ese `false` como algo que mirar, no solo como ruido.
+
+### Multi-local, visto desde el alta
+
+Hasta estos cambios `users.barberia_id` decía dos cosas a la vez: a qué local pertenece alguien y cuál está administrando. Ahora eso se reparte:
+
+- **`barberia_usuario`** dice a qué locales tiene acceso cada persona, con qué rol en cada uno (`admin` o `barbero`) y si atiende ahí (`es_barbero`).
+- **`users.barberia_id`** pasa a ser el local que tiene seleccionado ahora. Todas las consultas que ya existían (agenda, servicios, personal) siguen preguntando por él, y por eso no hubo que tocarlas.
+
+Para el panel de tenri.cl esto significa que **una misma cuenta puede comprar varias tiendas**: cada `crear-barberia` con el mismo correo le suma un local, y al entrar a booking elige con cuál trabajar. El listado de `POST /usuarios` sigue mostrando `barberia_id` y `barberia`, que son los del local seleccionado en ese momento, no la lista completa.
+
+Una consecuencia a tener presente con `PUT /usuarios/{id}/rol`: cambia `users.rol`, pero no el rol guardado en `barberia_usuario`. Como al cambiar de local (o al entrar con el local activo suspendido) la persona adopta el rol que tiene en ese local, el cambio hecho desde el panel puede no sobrevivir a un cambio de local.
+
+El detalle completo del modelo multi-local, desde el lado de booking, está en [`FUNCIONES-2026-09.md`](FUNCIONES-2026-09.md).
+
 ### `PUT /api/integracion/panel/barberias/{id}/suspension`
 
 Cuerpo: `{}`. **Toggle**, no un set: invierte el estado actual y devuelve `{"schema":1,"barberia":{…}}` con el resultado en `barberia.activa`. Leer ese campo en vez de asumir el efecto.
@@ -190,9 +269,10 @@ Mismo contrato que api.tenri.cl y el ERP, para que la página de estado sondee a
 | Código | Qué pasó |
 |---|---|
 | `200` | OK |
+| `201` | Solo en `crear-barberia`: la tienda quedó creada (leer `admin_creado`) |
 | `401` | Sin firma, firma inválida, timestamp fuera de ventana, nonce reusado, o `PANEL_INTEGRATION_KEY` sin configurar. Cuerpo siempre `{"message":"No autorizado."}` |
 | `404` | El `{id}` no existe |
-| `422` | Validación (por ejemplo un `rol` que no existe) |
+| `422` | Validación: un `rol` que no existe, un nombre de tienda tomado, un correo de superadmin en el alta, la contraseña en las dos formas o en ninguna. Los mensajes del alta van en español porque pueden llegar al comprador |
 | `429` | Pasó el `throttle:60,1` |
 | `503` | Solo en `/api/health`: servicio degradado |
 
@@ -235,3 +315,5 @@ El pendiente de suspensión de barberías que ese doc listaba (exponer `activa`,
 **El canal está vivo en producción desde el 2026-09-10.** Para diagnosticar más adelante, `booking:probe` en `~/tenri_backend` es la prueba end-to-end más corta: mide el canal firmado completo y su mensaje de error ya distingue clave mal puesta (`firma_rechazada`) de servicio caído (`sin_conexion`).
 
 El emisor quedó revisado contra este contrato el 2026-09-10: rutas, verbos, filtros en el cuerpo, `schema` verificado en las lecturas y no en los toggles, cero reintentos (el nonce de un solo uso haría fallar el segundo intento). No queda nada por ajustar del lado del puente.
+
+**Alta de tiendas (2026-09-22).** `crear-barberia`, `nombre-disponible` y `usuarios/password` se agregaron después de esa revisión y a esta fecha están en el working tree de este repositorio, sin desplegar. Antes de darlos por vivos hay que confirmar del lado de Tenri-Web-Page que el puente los firma con las mismas reglas de arriba, que lee `admin_creado` para decidir el correo de bienvenida, y que trata el `422` del alta como un caso posible aunque `nombre-disponible` haya dicho que el nombre estaba libre.
