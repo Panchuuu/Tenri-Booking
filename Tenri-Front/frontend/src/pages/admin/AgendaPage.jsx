@@ -4,6 +4,7 @@ import useApi from "../../hooks/useApi";
 import useApiMutation from "../../hooks/useApiMutation";
 import { parseApiErrorSync } from "../../utils/parseApiError";
 import PageHeader from "../../components/PageHeader";
+import ListaDeEspera from "../../components/ListaDeEspera";
 import { SearchIcon, CalendarIcon } from "../../components/Icons";
 
 // ============================================================
@@ -177,6 +178,10 @@ export default function AgendaPage() {
     <div>
       <PageHeader tag="Operaciones" titulo="Panel principal"
                   subtitulo="Resumen + citas activas con filtros y búsqueda" />
+
+      {/* A quién llamar cuando se cae una hora. Solo aparece si hay alguien
+          esperando: una tarjeta vacía todos los días enseña a ignorarla. */}
+      <ListaDeEspera />
 
       {/* ===== STATS POR PERIODO ===== */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">

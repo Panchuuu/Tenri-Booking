@@ -18,6 +18,14 @@ import { XIcon } from "./Icons";
 // Esto bloquea "fgaete@tenricl" porque "tenricl" no tiene "."
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
+/**
+ * De dónde sale una tienda: de tenri.cl, no de acá.
+ *
+ * En local el sitio corre en otro puerto, así que la dirección es configurable
+ * en vez de estar escrita a mano.
+ */
+const URL_TENRI = import.meta.env.VITE_TENRI_URL || "https://tenri.cl";
+
 export default function Login({ onClose, onLoginSuccess, modoRegistro = false }) {
   const { login } = useAuth();
 
@@ -86,7 +94,7 @@ export default function Login({ onClose, onLoginSuccess, modoRegistro = false })
       const datos = await r.json();
 
       if (r.ok) {
-        login(datos.access_token, datos.user);
+        login(datos.access_token, datos.user, datos.locales);
         toast.success(esRegistro ? "¡Cuenta creada!" : "¡Bienvenido!");
         onLoginSuccess?.(datos.user);
       } else {
@@ -126,7 +134,7 @@ export default function Login({ onClose, onLoginSuccess, modoRegistro = false })
                 {esRegistro ? "Crear cuenta" : "Bienvenido"}
               </h2>
               <p className="text-sm text-muted dark:text-slate-400 mt-2">
-                {esRegistro ? "Únete a la red Tenri" : "Ingresa para continuar"}
+                {esRegistro ? "Para reservar tus horas" : "Ingresa para continuar"}
               </p>
             </div>
             <button
@@ -222,6 +230,27 @@ export default function Login({ onClose, onLoginSuccess, modoRegistro = false })
                 {esRegistro ? "Inicia sesión" : "Regístrate"}
               </button>
             </div>
+
+            {/*
+              Esta cuenta es para reservar, no para atender.
+
+              Quien quiere recibir reservas no se registra acá: su tienda y su
+              cuenta de administración nacen al comprar Booking en tenri.cl, y
+              entra con esas mismas credenciales. Sin este cartel, un dueño se
+              crea una cuenta de cliente, no encuentra su local por ningún lado
+              y termina escribiendo a soporte.
+            */}
+            <p className="mt-4 text-center text-xs text-faint dark:text-slate-500 leading-relaxed">
+              ¿Tienes un local y quieres recibir reservas?{" "}
+              <a
+                href={`${URL_TENRI}/catalogo`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+              >
+                Tu tienda se crea en tenri.cl
+              </a>
+            </p>
           </div>
         </div>
       </div>

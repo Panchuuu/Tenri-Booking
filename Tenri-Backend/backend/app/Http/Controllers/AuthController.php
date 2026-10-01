@@ -44,13 +44,32 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // Barbería suspendida: sus admins y barberos no entran. Los clientes
-        // no tienen barbería propia y no se ven afectados, y el superadmin
-        // queda exento — es quien tiene que poder entrar a reactivarla.
-        if ($user->rol !== 'superadmin' && $user->barberia_id !== null && ! $user->barberia()->activas()->exists()) {
-            return response()->json([
-                'message' => 'La barbería de tu cuenta está suspendida. Contacta al administrador.',
-            ], 403);
+        /**
+         * Barbería suspendida: sus admins y barberos no entran. Los clientes
+         * no tienen barbería propia y no se ven afectados, y el superadmin
+         * queda exento — es quien tiene que poder entrar a reactivarla.
+         *
+         * Con varios locales la pregunta cambia de "¿el tuyo está activo?" a
+         * "¿te queda alguno activo?". Si el que tenía seleccionado quedó
+         * suspendido pero tiene otro en pie, se le cambia el activo en vez de
+         * dejarlo afuera: sus otros locales no tienen la culpa.
+         */
+        if ($user->rol !== 'superadmin' && $user->barberia_id !== null) {
+            // Cubre las cuentas anteriores a `barberia_usuario` y cualquier
+            // camino que todavía escriba `barberia_id` directo.
+            $user->asegurarAccesoAlLocalActivo();
+
+            $disponibles = $user->barberiasAdministradas()->activas()->pluck('barberias.id');
+
+            if ($disponibles->isEmpty()) {
+                return response()->json([
+                    'message' => 'La barbería de tu cuenta está suspendida. Contacta al administrador.',
+                ], 403);
+            }
+
+            if (! $disponibles->contains($user->barberia_id)) {
+                $user->seleccionarLocal((int) $disponibles->first());
+            }
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -58,6 +77,10 @@ class AuthController extends Controller
         return response()->json([
             'access_token' => $token,
             'user'         => $this->withAvatarUrl($user),
+
+            // Los locales a los que puede entrar. Con más de uno, el front
+            // pregunta cuál administrar; con uno solo no hay nada que elegir.
+            'locales'      => $this->localesDe($user),
         ]);
     }
 
@@ -103,6 +126,13 @@ class AuthController extends Controller
         $user->name  = $validated['name'];
         $user->email = $validated['email'];
 
+        // `array_key_exists` y no `filled`: borrar el teléfono tiene que ser
+        // posible, y un `null` que se ignora deja a la persona sin poder darse
+        // de baja del canal.
+        if (array_key_exists('telefono', $validated)) {
+            $user->telefono = $validated['telefono'] ?: null;
+        }
+
         // Password opcional. Solo se hashea si viene presente y no vacío.
         if (!empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);
@@ -140,6 +170,65 @@ class AuthController extends Controller
     /**
      * Helper privado: anexa avatar_url al usuario antes de devolverlo.
      */
+    /**
+     * Los locales de quien está en sesión.
+     *
+     * El login ya los devuelve, pero una recarga del panel no vuelve a pasar
+     * por el login: sin esto, el selector desaparecería hasta el próximo
+     * ingreso.
+     */
+    public function misLocales(Request $request)
+    {
+        return response()->json(['locales' => $this->localesDe($request->user())]);
+    }
+
+    /**
+     * Cambia el local activo de quien ya entró.
+     *
+     * Es lo que usa el selector del panel cuando alguien administra más de uno.
+     * Cambia también su rol, porque puede ser dueña de un local y barbera en
+     * otro, y lo que puede hacer depende de dónde está parada.
+     */
+    public function seleccionarLocal(Request $request)
+    {
+        $datos = $request->validate([
+            'barberia_id' => 'required|integer',
+        ]);
+
+        $user = $request->user();
+
+        if (! $user->seleccionarLocal((int) $datos['barberia_id'])) {
+            return response()->json(['message' => 'No tienes acceso a ese local.'], 403);
+        }
+
+        if (! $user->barberia()->activas()->exists()) {
+            return response()->json(['message' => 'Ese local está suspendido.'], 403);
+        }
+
+        return response()->json([
+            'user'    => $this->withAvatarUrl($user->fresh()),
+            'locales' => $this->localesDe($user),
+        ]);
+    }
+
+    /**
+     * Los locales a los que esta persona tiene acceso, con su rol en cada uno.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function localesDe(User $user): array
+    {
+        return $user->barberiasAdministradas()->get()->map(fn (\App\Models\Barberia $b) => [
+            'id'     => $b->id,
+            'nombre' => $b->nombre,
+            'slug'   => $b->slug,
+            'logo_url' => $b->logo_url,
+            'activa' => $b->activa,
+            'rol'    => $b->pivot->rol,
+            'activo' => $b->id === $user->barberia_id,
+        ])->all();
+    }
+
     private function withAvatarUrl(User $user): User
     {
         if ($user->avatar) {

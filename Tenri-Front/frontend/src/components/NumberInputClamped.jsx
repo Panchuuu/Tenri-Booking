@@ -86,11 +86,20 @@ export default function NumberInputClamped({
       return;
     }
 
-    const clamped = clamp(parsed);
-
-    // Si el usuario intentó pasarse del max/min, mostramos el valor clampeado
-    setInternal(String(clamped));
-    onChange(clamped);
+    /**
+     * Mientras escribe, se respeta lo que escribió.
+     *
+     * Clampar en cada tecla rompía el campo: con `min` 5, escribir "30"
+     * empezaba por "3", que se corregía a "5" al instante, y la siguiente
+     * tecla lo dejaba en "50". Bajar el valor a mano era imposible, porque
+     * cualquier primer dígito menor al mínimo saltaba al mínimo.
+     *
+     * El ajuste va al salir del campo, que es cuando el número ya está
+     * completo. El overflow que este componente vino a evitar se sigue
+     * evitando: ningún valor fuera de rango llega a guardarse.
+     */
+    setInternal(raw);
+    onChange(parsed);
   };
 
   const handleBlur = () => {
@@ -99,7 +108,21 @@ export default function NumberInputClamped({
       const fallback = clamp(0);
       setInternal(String(fallback));
       onChange(fallback);
+      return;
     }
+
+    const parsed = Number(String(internal).replace(",", "."));
+
+    if (Number.isNaN(parsed)) {
+      const fallback = clamp(0);
+      setInternal(String(fallback));
+      onChange(fallback);
+      return;
+    }
+
+    const clamped = clamp(parsed);
+    setInternal(String(clamped));
+    onChange(clamped);
   };
 
   const baseClasses =
