@@ -24,6 +24,8 @@ php artisan schedule:work            # scheduler en dev (recordatorios, cierre d
 
 Los tests corren con SQLite en memoria, `MAIL_MAILER=array` y `QUEUE_CONNECTION=sync` (ver `phpunit.xml`) — no necesitan BD ni SMTP configurados.
 
+**Demo local con el panel de tenri.cl**: la contraseña del Postgres local no se conoce, así que se levanta con SQLite por variables de entorno del proceso (le ganan al `.env`): `DB_CONNECTION=sqlite DB_DATABASE=<ruta>.sqlite PANEL_INTEGRATION_KEY=clave-demo-local APP_URL=http://127.0.0.1:8010 CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync php artisan serve --port=8010`, y el front con `VITE_API_URL=http://127.0.0.1:8010/api`. El resto del entorno de los tres repos está en el `CLAUDE.md` de la carpeta madre (`../CLAUDE.md`).
+
 ### Frontend (desde `Tenri-Front/frontend/`, usa **pnpm**)
 
 ```bash
@@ -40,7 +42,9 @@ Cada barbería es un tenant aislado por `barberia_id`. Los controllers **siempre
 
 - Roles (`users.rol`): `superadmin` (plataforma), `admin` (su barbería), `barbero` (su agenda), `cliente` (reservas).
 - Middleware `role:X` (`app/Http/Middleware/CheckRole.php`) soporta multi-rol: `role:admin,barbero`.
-- **Rol dual**: `users.es_barbero` (boolean) permite que un admin atienda también como barbero sin cambiar su `rol`. Usar `esBarberoActivo()` y el scope `User::barberos()` en vez de comparar `rol === 'barbero'` a mano.
+- **Varios locales por persona** (v1.0.0): `barberia_usuario` dice a qué locales tiene acceso cada usuario y con qué rol en cada uno. `users.barberia_id` es **el local que está usando ahora**: por eso el resto del código sigue filtrando por esa columna sin cambios. Cambiar de local es `PUT /api/sesion/local` y adopta el rol de ese local.
+- **Rol dual**: `es_barbero` vive en el pivote, por local (sumarse al equipo de un local no lo suma al de otros). `users.es_barbero` es solo el reflejo del local activo, con un único escritor: `User::refrescarEsBarbero()`. Usar `esBarberoActivo()` y el scope `User::barberos()` en vez de comparar `rol === 'barbero'` a mano.
+- **Registro público solo para clientes**: los dueños llegan desde tenri.cl (`crear-barberia` del canal del panel), no se registran acá.
 
 ### Esquema de base de datos (modelos en `app/Models/`)
 
@@ -67,7 +71,13 @@ Estados: `pendiente` → `confirmada` → `finalizada` | `cancelada`.
 
 ### Emails y tareas programadas
 
-5 mailables en `app/Mail/` (todos `ShouldQueue`, plantillas en `resources/views/emails/`): confirmación, cancelación, aviso al barbero, recordatorio, califica tu visita. El scheduler está en `routes/console.php`: recordatorios diarios a las 09:00 (idempotente vía `recordatorio_enviado_at`) y `citas:finalizar-vencidas` cada hora.
+Mailables en `app/Mail/` (todos `ShouldQueue`, plantillas en `resources/views/emails/`): confirmación, cancelación, aviso al barbero, recordatorio, califica tu visita y cupo liberado. El scheduler está en `routes/console.php`: recordatorios diarios a las 09:00 (idempotente vía `recordatorio_enviado_at`) y `citas:finalizar-vencidas` cada hora.
+
+- **Lista de espera** (`lista_espera`): al pasar una cita a `cancelada` se avisa a los 3 primeros del día. Está enganchado al **modelo Cita**, no a los controllers, porque cancelar pasa por tres caminos.
+- **WhatsApp** (`App\Services\WhatsApp`): driver `log` en desarrollo y `cloud` (Meta) en producción; nunca lanza y cae al correo. El recordatorio sale por WhatsApp o por correo, nunca por los dos. **En producción hay que definir `WHATSAPP_DRIVER=cloud`**: el valor por defecto es `log`, y con él los avisos a quien tenga teléfono quedan en el log y no le llega el correo.
+- **Puesta en marcha** de una tienda nueva: `GET/POST /api/mi-barberia/configuracion[/tutorial]`, cuatro pasos, ofrecida una vez por local (`barberias.onboarding_resuelto_en`).
+
+Detalle de multi-local, lista de espera, WhatsApp y puesta en marcha: `docs/FUNCIONES-2026-09.md`.
 
 ### API (`routes/api.php`)
 
@@ -98,4 +108,8 @@ Convenciones:
 
 ## Documentación a mantener sincronizada
 
-Al cambiar rutas o features, actualizar según corresponda: `docs/API_ENDPOINTS.md` (endpoints), `docs/INTEGRACION-PANEL.md` (canal con el panel), `README.md` (features visibles), `docs/DEPLOY.md` / `README-SERVIDOR.md` (infra).
+Al cambiar rutas o features, actualizar según corresponda: `docs/API_ENDPOINTS.md` (endpoints), `docs/INTEGRACION-PANEL.md` (canal con el panel), `docs/FUNCIONES-2026-09.md` (multi-local, lista de espera, WhatsApp), `README.md` (features visibles), `docs/DEPLOY.md` / `README-SERVIDOR.md` (infra).
+
+## Flujo de ramas y commits
+
+`fgaete` (trabajo) → `dev` → `main` (despliega). Cada commit lleva la versión: `Tenri Booking vX.Y.Z - Tipo (área): …`. La primera versión con número es **v1.0.0**; los commits anteriores usaban `feat(...)`/`fix(...)`.
